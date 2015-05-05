@@ -226,12 +226,12 @@ func (s *SSHProtoHandler) handleChannels(chans <-chan ssh.NewChannel) {
 					termLen := req.Payload[3]
 					termEnv := string(req.Payload[4 : termLen+4])
 					w, h := parseDims(req.Payload[termLen+4:])
-					SetWinsize(f.Fd(), w, h)
+					setWinsize(f.Fd(), w, h)
 					log.Printf("pty-req '%s'", termEnv)
 				case "window-change":
 					log.Println("window change request")
 					w, h := parseDims(req.Payload)
-					SetWinsize(f.Fd(), w, h)
+					setWinsize(f.Fd(), w, h)
 					continue //no response
 				}
 

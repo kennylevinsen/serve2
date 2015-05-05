@@ -24,9 +24,9 @@ func main() {
 	// These two are silly, and requires that you write "ECHO" or "DISCARD" when
 	// the connection is opened to recognize the protocol, as neither of these
 	// actually have any initial request or handshake.
-	echoHandler := serve2.NewEchoHandler()
-	discardHandler := serve2.NewDiscardHandler()
+	echo := serve2.NewEchoProtoHandler()
+	discard := serve2.NewDiscardProtoHandler()
 
-	server.AddHandlers(echoHandler, discardHandler)
+	server.AddHandlers(echo, discard)
 	server.Serve(l)
 }

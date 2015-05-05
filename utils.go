@@ -8,7 +8,8 @@ import (
 // ChannelListener simulates a net.Listener, with Accept simply waiting on a
 // channel to feed it connections. This is needed, as Go's http library does
 // not provide a way to simply handle a single connection, but only supports
-// accepting the connections itself.
+// accepting the connections itself, but can be used for anything that only
+// accepts a net.Listener
 type ChannelListener struct {
 	input chan net.Conn
 	addr  net.Addr

@@ -1,5 +1,3 @@
-// Package serve2 provides a mechanism to detect and handle multiple protocols
-// on a single net.Conn or net.Listener.
 package serve2
 
 import (
