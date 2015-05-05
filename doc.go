@@ -42,7 +42,7 @@ Or with a HTTP server (Requires a http.Handler implementation as
 	echo := serve2.NewEchoProtoHandler()
 	discard := serve2.NewDiscardProtoHandler()
 	http, _ := serve2.NewHTTPProtoHandler(httpHandler, l.Addr())
-	server.AddHandlers(echo, discard, httpH)
+	server.AddHandlers(echo, discard, http)
 	server.Serve(l)
 
 
