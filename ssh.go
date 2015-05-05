@@ -117,7 +117,7 @@ func NewSSHProtoHandler(hostKey, authKeys string) *SSHProtoHandler {
 // Start assigns a pseudo-terminal tty os.File to c.Stdin, c.Stdout,
 // and c.Stderr, calls c.Start, and returns the File of the tty's
 // corresponding pty.
-func PtyRun(c *exec.Cmd, tty *os.File) (err error) {
+func ptyRun(c *exec.Cmd, tty *os.File) (err error) {
 	defer tty.Close()
 	c.Stdout = tty
 	c.Stdin = tty
@@ -189,7 +189,7 @@ func (s *SSHProtoHandler) handleChannels(chans <-chan ssh.NewChannel) {
 					log.Println("shell request")
 					cmd := exec.Command(s.defaultShell)
 					cmd.Env = []string{"TERM=xterm"}
-					err := PtyRun(cmd, tty)
+					err := ptyRun(cmd, tty)
 					if err != nil {
 						log.Printf("%s", err)
 					}
@@ -252,16 +252,16 @@ func parseDims(b []byte) (uint32, uint32) {
 	return w, h
 }
 
-// Winsize stores the Height and Width of a terminal.
-type Winsize struct {
+// winsize stores the Height and Width of a terminal.
+type winsize struct {
 	Height uint16
 	Width  uint16
 	x      uint16 // unused
 	y      uint16 // unused
 }
 
-// SetWinsize sets the size of the given pty.
-func SetWinsize(fd uintptr, w, h uint32) {
-	ws := &Winsize{Width: uint16(w), Height: uint16(h)}
+// setWinsize sets the size of the given pty.
+func setWinsize(fd uintptr, w, h uint32) {
+	ws := &winsize{Width: uint16(w), Height: uint16(h)}
 	syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(syscall.TIOCSWINSZ), uintptr(unsafe.Pointer(ws)))
 }
