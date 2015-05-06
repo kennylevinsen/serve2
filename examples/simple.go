@@ -38,11 +38,7 @@ func main() {
 	server := serve2.New()
 
 	// See the HTTPHandler above
-	http, err := serve2.NewHTTPProtoHandler(&HTTPHandler{}, l.Addr())
-	if err != nil {
-		panic(err)
-	}
-
+	http := serve2.NewHTTPProtoHandler(&HTTPHandler{})
 	echo := serve2.NewEchoProtoHandler()
 	discard := serve2.NewDiscardProtoHandler()
 

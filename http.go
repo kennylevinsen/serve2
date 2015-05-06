@@ -17,13 +17,11 @@ type HTTPProtoHandler struct {
 }
 
 // Setup installs the http handler, and stores the address for use of the ChannelListener
-func (h *HTTPProtoHandler) Setup(handler http.Handler, addr net.Addr) error {
-	h.listener = NewChannelListener(make(chan net.Conn, 10), addr)
+func (h *HTTPProtoHandler) Setup(handler http.Handler) {
+	h.listener = NewChannelListener(make(chan net.Conn, 10), nil)
 
 	httpServer := http.Server{Addr: ":http", Handler: handler}
 	go httpServer.Serve(h.listener)
-
-	return nil
 }
 
 // Handle pushes the connection to the HTTP server
@@ -50,11 +48,8 @@ func (h *HTTPProtoHandler) BytesRequired() int {
 }
 
 // NewHTTPProtoHandler returns a fully initialized HTTPProtoHandler
-func NewHTTPProtoHandler(handler http.Handler, addr net.Addr) (*HTTPProtoHandler, error) {
+func NewHTTPProtoHandler(handler http.Handler) *HTTPProtoHandler {
 	h := HTTPProtoHandler{}
-	err := h.Setup(handler, addr)
-	if err != nil {
-		return nil, err
-	}
-	return &h, nil
+	h.Setup(handler)
+	return &h
 }
