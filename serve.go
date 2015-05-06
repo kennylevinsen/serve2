@@ -1,25 +1,26 @@
 package serve2
 
 import (
-	"log"
 	"net"
 )
 
-// ProtocolHandler is the protocol detection and handling interface used by serve2
+// ProtocolHandler is the protocol detection and handling interface used by
+// serve2.
 type ProtocolHandler interface {
-	// BytesRequired tells how many bytes the Checker needs
+	// BytesRequired tells how many bytes Check needs.
 	BytesRequired() int
 
-	// Checker informs if the bytes match the protocol
+	// Check informs if the bytes match the protocol. The byte slice is
+	// guaranteed to be BytesRequired() long.
 	Check([]byte) bool
 
-	// Handle manages the protocol. In case of encapsulating protocol, Handle
+	// Handle manages the protocol. In case of an encapsulating protocol, Handle
 	// can return a net.Conn which will be thrown through the entire protocol
-	// management show again
+	// management show again.
 	Handle(net.Conn) net.Conn
 }
 
-// Server handles a set of ProtocolHandlers
+// Server handles a set of ProtocolHandlers.
 type Server struct {
 	protocols   []ProtocolHandler
 	bytesToRead int
@@ -60,10 +61,6 @@ func (s *Server) prepareHandlers() {
 	}
 
 	s.protocols = handlers
-
-	for _, v := range s.protocols {
-		log.Printf("Handler: %T, bytes required: %d\n", v, v.BytesRequired())
-	}
 }
 
 // HandleConnection runs a connection through protocol detection and handling
@@ -84,7 +81,6 @@ func (s *Server) HandleConnection(c net.Conn) {
 		}
 
 		if ph.Check(header) {
-			log.Printf("Connection recognized as: %T\n", ph)
 			proxy := NewProxyConn(c, header)
 
 			x := ph.Handle(proxy)
@@ -99,7 +95,7 @@ func (s *Server) HandleConnection(c net.Conn) {
 	return
 }
 
-// Serve accepts connections on a listener, handling them as appropriate
+// Serve accepts connections on a listener, handling them as appropriate.
 func (s *Server) Serve(l net.Listener) {
 	s.prepareHandlers()
 	for {
@@ -114,7 +110,7 @@ func (s *Server) Serve(l net.Listener) {
 	}
 }
 
-// New returns a new Server
+// New returns a new Server.
 func New() *Server {
 	return &Server{}
 }

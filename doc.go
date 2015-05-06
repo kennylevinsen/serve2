@@ -33,15 +33,32 @@ protocol):
 Or with a HTTP server (Requires a http.Handler implementation as
 "httpHandler"):
 
+	type HTTPHandler struct{}
+
+	func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "OPTIONS" || r.Method == "HEAD" {
+			return
+		}
+
+		fmt.Fprintf(w, "<!DOCTYPE html><html><body>Welcome!</body></html>")
+
+	}
+
+	httpHandler := HTTPHandler{}
+
+	// ...
+
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		panic(err)
 	}
 
 	server := serve2.New()
+
 	echo := serve2.NewEchoProtoHandler()
 	discard := serve2.NewDiscardProtoHandler()
-	http, _ := serve2.NewHTTPProtoHandler(httpHandler, l.Addr())
+	http := serve2.NewHTTPProtoHandler(&httpHandler)
+
 	server.AddHandlers(echo, discard, http)
 	server.Serve(l)
 

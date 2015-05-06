@@ -6,14 +6,14 @@ import (
 )
 
 // TLSProtoHandler handles abstraction of TLS connections, in order to feed
-// them back into the protocol detectors
+// them back into the protocol detectors.
 type TLSProtoHandler struct {
 	// config stores the TLS configuration, including supported protocols and
-	// certificates
+	// certificates.
 	config *tls.Config
 }
 
-// Setup loads the certificates and sets up supported protocols
+// Setup loads the certificates and sets up supported protocols.
 func (t *TLSProtoHandler) Setup(protos []string, cert, key string) error {
 	var err error
 	t.config = &tls.Config{}
@@ -27,7 +27,7 @@ func (t *TLSProtoHandler) Setup(protos []string, cert, key string) error {
 	return nil
 }
 
-// Handle returns a connection with TLS abstracted away
+// Handle returns a connection with TLS abstracted away.
 func (t *TLSProtoHandler) Handle(c net.Conn) net.Conn {
 	return tls.Server(c, t.config)
 }
@@ -40,7 +40,7 @@ func (t *TLSProtoHandler) BytesRequired() int {
 	return 6
 }
 
-// NewTLSProtoHandler returns an initialized TLSProtoHandler
+// NewTLSProtoHandler returns an initialized TLSProtoHandler.
 func NewTLSProtoHandler(protos []string, cert, key string) (*TLSProtoHandler, error) {
 	h := TLSProtoHandler{}
 	err := h.Setup(protos, cert, key)

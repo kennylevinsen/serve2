@@ -20,7 +20,7 @@ import (
 	"github.com/kr/pty"
 )
 
-// SSHProtoHandler allows for secure shell login for the user of the server
+// SSHProtoHandler allows for secure shell login for the user of the server.
 type SSHProtoHandler struct {
 	hostPrivateKeySigner ssh.Signer
 	sshConfig            ssh.ServerConfig
@@ -28,7 +28,8 @@ type SSHProtoHandler struct {
 	defaultShell         string
 }
 
-// Setup configures the SSHProtoHandlers private server key, as well as authorized_keys to permit login from
+// Setup configures the SSHProtoHandlers private server key, as well as
+// authorized_keys to permit login from.
 func (s *SSHProtoHandler) Setup(hostKey, authKeys string) {
 
 	hostPrivateKey, err := ioutil.ReadFile(hostKey)
@@ -71,7 +72,7 @@ func (s *SSHProtoHandler) Setup(hostKey, authKeys string) {
 
 }
 
-// Handle creats a SSH session from the connection
+// Handle creates a SSH session from the connection.
 func (s *SSHProtoHandler) Handle(c net.Conn) net.Conn {
 	sshConn, chans, reqs, err := ssh.NewServerConn(c, &s.sshConfig)
 	if err != nil {
@@ -100,7 +101,7 @@ func (s *SSHProtoHandler) handleRequests(reqs <-chan *ssh.Request) {
 	}
 }
 
-// NewSSHProtoHandler returns a fully initialized SSHProtoHandler
+// NewSSHProtoHandler returns a fully initialized SSHProtoHandler.
 func NewSSHProtoHandler(hostKey, authKeys string) *SSHProtoHandler {
 	s := SSHProtoHandler{
 		defaultShell: "zsh",
