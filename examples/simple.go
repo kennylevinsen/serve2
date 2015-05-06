@@ -29,12 +29,6 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
-	l, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		panic(err)
-	}
-
 	server := serve2.New()
 
 	// See the HTTPHandler above
@@ -43,5 +37,11 @@ func main() {
 	discard := serve2.NewDiscardProtoHandler()
 
 	server.AddHandlers(echo, discard, http)
+
+	l, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
 	server.Serve(l)
 }

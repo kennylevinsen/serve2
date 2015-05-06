@@ -19,15 +19,16 @@ or DISCARD to the connection to trigger those protocol handlers.
 A simple echo and discard server (Write ECHO or DISCARD to the socket to select
 protocol):
 
+	server := serve2.New()
+	echo := serve2.NewEchoProtoHandler()
+	discard := serve2.NewDiscardProtoHandler()
+	server.AddHandlers(echo, discard, http)
+
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		panic(err)
 	}
 
-	server := serve2.New()
-	echo := serve2.NewEchoProtoHandler()
-	discard := serve2.NewDiscardProtoHandler()
-	server.AddHandlers(echo, discard, http)
 	server.Serve(l)
 
 Or with a HTTP server (Requires a http.Handler implementation as
@@ -48,11 +49,6 @@ Or with a HTTP server (Requires a http.Handler implementation as
 
 	// ...
 
-	l, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		panic(err)
-	}
-
 	server := serve2.New()
 
 	echo := serve2.NewEchoProtoHandler()
@@ -60,6 +56,12 @@ Or with a HTTP server (Requires a http.Handler implementation as
 	http := serve2.NewHTTPProtoHandler(&httpHandler)
 
 	server.AddHandlers(echo, discard, http)
+
+	l, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
 	server.Serve(l)
 
 
