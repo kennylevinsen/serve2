@@ -64,6 +64,20 @@ Or with a HTTP server (Requires a http.Handler implementation as
 
 	server.Serve(l)
 
+If you want to detect the protocol, but proxy the connection to an external
+handler, then ProxyProtoHandler will prove useful:
+
+	server := serve2.New()
+	proxy := serve2.NewProxyProtoHandler("SSH", "tcp", "localhost:22")
+
+	server.AddHandler(proxy)
+
+	l, err := new.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
+	server.Serve(l)
 
 */
 package serve2
