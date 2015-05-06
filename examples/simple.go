@@ -1,16 +1,32 @@
 package main
 
 import (
+	"fmt"
 	"github.com/joushou/serve2"
 	"net"
+	"net/http"
 )
 
 //
-// To test:
+// Accepts HTTP, ECHO and DISCARD. HTTP can be tested with a browser or
+// curl/wget.
+//
+// To test ECHO/DISCARD
 //   nc localhost 8080
 //
 // ... And then write "ECHO" or "DISCARD", followed by return, and what you
 // want echooed or discarded
+
+type HTTPHandler struct{}
+
+func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "OPTIONS" || r.Method == "HEAD" {
+		return
+	}
+
+	fmt.Fprintf(w, "<!DOCTYPE html><html><head></head><body>Welcome to %s</body></html>", r.URL.Path)
+
+}
 
 func main() {
 
@@ -21,12 +37,15 @@ func main() {
 
 	server := serve2.New()
 
-	// These two are silly, and requires that you write "ECHO" or "DISCARD" when
-	// the connection is opened to recognize the protocol, as neither of these
-	// actually have any initial request or handshake.
+	// See the HTTPHandler above
+	http, err := serve2.NewHTTPProtoHandler(&HTTPHandler{}, l.Addr())
+	if err != nil {
+		panic(err)
+	}
+
 	echo := serve2.NewEchoProtoHandler()
 	discard := serve2.NewDiscardProtoHandler()
 
-	server.AddHandlers(echo, discard)
+	server.AddHandlers(echo, discard, http)
 	server.Serve(l)
 }
