@@ -36,7 +36,10 @@ func main() {
 	echo := serve2.NewEchoProtoHandler()
 	discard := serve2.NewDiscardProtoHandler()
 
-	server.AddHandlers(echo, discard, http)
+	// Proxy connections with the header "SSH" to localhost port 22 using TCP
+	proxy := serve2.NewProxyProtoHandler("SSH", "tcp", "localhost:22")
+
+	server.AddHandlers(echo, discard, http, proxy)
 
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {
