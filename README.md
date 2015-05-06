@@ -10,3 +10,7 @@ To get:
 To test:
 
     go run examples/simple.go
+
+More info at:
+
+   https://godoc.org/github.com/Joushou/serve2
