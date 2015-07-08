@@ -2,6 +2,8 @@ package serve2
 
 import (
 	"net"
+
+	"github.com/joushou/serve2/utils"
 )
 
 // ProtocolHandler is the protocol detection and handling interface used by
@@ -12,6 +14,8 @@ type ProtocolHandler interface {
 
 	// Check informs if the bytes match the protocol. The byte slice is
 	// guaranteed to be BytesRequired() long.
+	// TODO: Should return if the handler wants more bytes, letting the Server
+	// evaluate if it wants to check another protocol first before reading more.
 	Check([]byte) bool
 
 	// Handle manages the protocol. In case of an encapsulating protocol, Handle
@@ -43,8 +47,8 @@ func (s *Server) AddHandlers(p ...ProtocolHandler) {
 // required.
 func (s *Server) prepareHandlers() {
 	s.bytesToRead = 0
-	handlers := make([]ProtocolHandler, 0)
 
+	var handlers []ProtocolHandler
 	for range s.protocols {
 		smallest := -1
 		for i, v := range s.protocols {
@@ -71,9 +75,11 @@ func (s *Server) HandleConnection(c net.Conn) {
 
 	for _, ph := range s.protocols {
 		required := ph.BytesRequired()
-		if read < required {
+		for read < required {
 			n, err := c.Read(header[read:required])
 			if err != nil {
+				// We couldn't read any more data, so we just kill things
+				c.Close()
 				return
 			}
 			header = header[:read+n]
@@ -81,7 +87,7 @@ func (s *Server) HandleConnection(c net.Conn) {
 		}
 
 		if ph.Check(header) {
-			proxy := NewProxyConn(c, header)
+			proxy := utils.NewProxyConn(c, header)
 
 			x := ph.Handle(proxy)
 			if x != nil {

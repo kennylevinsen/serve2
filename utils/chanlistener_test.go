@@ -1,11 +1,9 @@
-package serve2
+package utils
 
 import (
 	"net"
 	"testing"
 )
-
-// TODO: Mock net.Conn and test ProxyConn
 
 func TestChannelListenerAccept(t *testing.T) {
 
