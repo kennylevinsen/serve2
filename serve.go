@@ -71,7 +71,9 @@ func (s *Server) AddHandlers(p ...ProtocolHandler) {
 // detect their protocol (lowest first), and stores the highest number of bytes
 // required.
 func (s *Server) prepareHandlers() {
-	s.Logger("Sorting %d protocols", len(s.protocols))
+	if s.Logger != nil {
+		s.Logger("Sorting %d protocols", len(s.protocols))
+	}
 
 	var handlers []ProtocolHandler
 
@@ -103,7 +105,9 @@ func (s *Server) handle(h ProtocolHandler, c net.Conn, header []byte) {
 	proxy := utils.NewProxyConn(c, header)
 	x := h.Handle(proxy)
 	if x != nil {
-		s.Logger("Handler produced new connection, re-running detection")
+		if s.Logger != nil {
+			s.Logger("Handler %v for %v is a transport, running again", h, c.RemoteAddr())
+		}
 		s.HandleConnection(x)
 	}
 }
@@ -142,7 +146,9 @@ func (s *Server) HandleConnection(c net.Conn) error {
 
 			ok, required := handler.Check(header)
 			if ok {
-				s.Logger("Handling connection as %v: [%v]", handler, header)
+				if s.Logger != nil {
+					s.Logger("Handling connection %v as %v", c.RemoteAddr(), handler)
+				}
 				s.handle(handler, c, header)
 				return nil
 			}
@@ -174,13 +180,17 @@ func (s *Server) HandleConnection(c net.Conn) error {
 	}
 
 	if s.DefaultProtocol != nil {
-		s.Logger("Defaulting to %v: [%v]", s.DefaultProtocol, header)
+		if s.Logger != nil {
+			s.Logger("Defaulting %v to %v: [%v]", c.RemoteAddr(), s.DefaultProtocol, header)
+		}
 		s.handle(s.DefaultProtocol, c, header)
 		return nil
 	}
 
 	// No one knew what was going on on this connection
-	s.Logger("Handling failed: [%v]", header)
+	if s.Logger != nil {
+		s.Logger("Handling %v failed: [%v]", c.RemoteAddr(), header)
+	}
 	c.Close()
 	return failureReason
 }
@@ -204,6 +214,6 @@ func (s *Server) Serve(l net.Listener) {
 func New() *Server {
 	return &Server{
 		BytesToCheck: DefaultBytesToCheck,
-		Logger:       func(string, ...interface{}) {},
+		Logger:       nil,
 	}
 }
