@@ -1,22 +1,35 @@
 package serve2
 
 import (
+	"errors"
 	"net"
 
 	"github.com/joushou/serve2/utils"
 )
 
+const (
+	// DefaultBytesToCheck default maximum amount of bytes to check
+	DefaultBytesToCheck = 128
+)
+
+var (
+	// Errors
+	ErrReadFailed    = errors.New("read failed")
+	ErrGreedyHandler = errors.New("remaining handlers too greedy; protocol not recognized")
+	ErrNoMatch       = errors.New("protocol not recognized")
+)
+
 // ProtocolHandler is the protocol detection and handling interface used by
 // serve2.
 type ProtocolHandler interface {
-	// BytesRequired tells how many bytes Check needs.
-	BytesRequired() int
-
-	// Check informs if the bytes match the protocol. The byte slice is
-	// guaranteed to be BytesRequired() long.
-	// TODO: Should return if the handler wants more bytes, letting the Server
-	// evaluate if it wants to check another protocol first before reading more.
-	Check([]byte) bool
+	// Check informs if the bytes match the protocol. If there is not enough
+	// data yet, it should return false and the wanted amount of bytes, allowing
+	// future calls when more data is available. It does not need to return the
+	// same every time, and incrementally checking more and more data is
+	// allowed. Returning false and 0 bytes needed means that the protocol
+	// handler is 100% sure that this is not the proper protocol, and will not
+	// result in any further calls.
+	Check([]byte) (ok bool, needed int)
 
 	// Handle manages the protocol. In case of an encapsulating protocol, Handle
 	// can return a net.Conn which will be thrown through the entire protocol
@@ -24,10 +37,22 @@ type ProtocolHandler interface {
 	Handle(net.Conn) net.Conn
 }
 
+// Logger is used to provide logging functionality for serve2
+type Logger func(format string, v ...interface{})
+
 // Server handles a set of ProtocolHandlers.
 type Server struct {
+	// DefaultProtocol is the protocol fallback if no match is made
+	DefaultProtocol ProtocolHandler
+
+	// Logger is used for logging if set
+	Logger Logger
+
+	// BytesToCheck is the max amount of bytes to check
+	BytesToCheck int
+
 	protocols   []ProtocolHandler
-	bytesToRead int
+	minimumRead int
 }
 
 // AddHandler registers a ProtocolHandler
@@ -46,59 +71,118 @@ func (s *Server) AddHandlers(p ...ProtocolHandler) {
 // detect their protocol (lowest first), and stores the highest number of bytes
 // required.
 func (s *Server) prepareHandlers() {
-	s.bytesToRead = 0
+	s.Logger("Sorting %d protocols", len(s.protocols))
 
 	var handlers []ProtocolHandler
+
 	for range s.protocols {
 		smallest := -1
 		for i, v := range s.protocols {
-			if smallest == -1 || v.BytesRequired() < s.protocols[smallest].BytesRequired() {
+			var contestant, current int
+			_, contestant = v.Check(nil)
+			if smallest == -1 {
 				smallest = i
+			} else {
+				_, current = s.protocols[smallest].Check(nil)
+				if contestant < current {
+					smallest = i
+				}
 			}
 
-			if v.BytesRequired() > s.bytesToRead {
-				s.bytesToRead = v.BytesRequired()
-			}
 		}
 		handlers = append(handlers, s.protocols[smallest])
 		s.protocols = append(s.protocols[:smallest], s.protocols[smallest+1:]...)
 	}
 
+	_, s.minimumRead = handlers[0].Check(nil)
+
 	s.protocols = handlers
+}
+
+func (s *Server) handle(h ProtocolHandler, c net.Conn, header []byte) {
+	proxy := utils.NewProxyConn(c, header)
+	x := h.Handle(proxy)
+	if x != nil {
+		s.Logger("Handler produced new connection, re-running detection")
+		s.HandleConnection(x)
+	}
 }
 
 // HandleConnection runs a connection through protocol detection and handling
 // as needed.
-func (s *Server) HandleConnection(c net.Conn) {
-	read := 0
-	header := make([]byte, 0, s.bytesToRead)
+func (s *Server) HandleConnection(c net.Conn) error {
+	var failureReason error
 
-	for _, ph := range s.protocols {
-		required := ph.BytesRequired()
-		for read < required {
-			n, err := c.Read(header[read:required])
-			if err != nil {
-				// We couldn't read any more data, so we just kill things
-				c.Close()
-				return
-			}
-			header = header[:read+n]
-			read = len(header)
+	header := make([]byte, 0, s.BytesToCheck)
+	c.Read(header) // Read a bit of data
+
+	handlers := make([]ProtocolHandler, len(s.protocols))
+	copy(handlers, s.protocols)
+
+	smallest := s.minimumRead
+	for len(handlers) > 0 {
+		// Read the required data
+		n, err := c.Read(header[len(header):smallest])
+		header = header[:len(header)+n]
+
+		if n == 0 && err != nil {
+			// Can't read anything
+			failureReason = ErrReadFailed
+			break
 		}
 
-		if ph.Check(header) {
-			proxy := utils.NewProxyConn(c, header)
+		if len(header) < smallest {
+			// We don't have enough data, try to read some more
+			continue
+		}
 
-			x := ph.Handle(proxy)
-			if x != nil {
-				s.HandleConnection(x)
+		smallest = -1
+		for i := 0; i < len(handlers); i++ {
+			handler := handlers[i]
+
+			ok, required := handler.Check(header)
+			if ok {
+				s.Logger("Handling connection as %v: [%v]", handler, header)
+				s.handle(handler, c, header)
+				return nil
 			}
-			return
+
+			if required == 0 {
+				// The handler is 100% that it doesn't match, so remove it
+				handlers = append(handlers[:i], handlers[i+1:]...)
+				i--
+			} else {
+				// The handler is unsure and needs more data
+				if smallest == -1 || required < smallest {
+					smallest = required
+				}
+			}
+
+		}
+
+		if smallest > s.BytesToCheck {
+			// The handlers want more data than we're allowed to read
+			failureReason = ErrGreedyHandler
+			break
+		}
+
+		if err != nil {
+			// We can't read anymore
+			failureReason = ErrNoMatch
+			break
 		}
 	}
 
+	if s.DefaultProtocol != nil {
+		s.Logger("Defaulting to %v: [%v]", s.DefaultProtocol, header)
+		s.handle(s.DefaultProtocol, c, header)
+		return nil
+	}
+
+	// No one knew what was going on on this connection
+	s.Logger("Handling failed: [%v]", header)
 	c.Close()
-	return
+	return failureReason
 }
 
 // Serve accepts connections on a listener, handling them as appropriate.
@@ -118,5 +202,8 @@ func (s *Server) Serve(l net.Listener) {
 
 // New returns a new Server.
 func New() *Server {
-	return &Server{}
+	return &Server{
+		BytesToCheck: DefaultBytesToCheck,
+		Logger:       func(string, ...interface{}) {},
+	}
 }

@@ -8,8 +8,12 @@ import "net"
 // everything it receives, hence the name.
 type Discard struct{}
 
+func (Discard) String() string {
+	return "Discard"
+}
+
 // Handle implements the DISCARD protocol (discarding all data).
-func (d Discard) Handle(c net.Conn) net.Conn {
+func (Discard) Handle(c net.Conn) net.Conn {
 	go func(conn net.Conn) {
 		s := make([]byte, 1024)
 		for {
@@ -23,14 +27,12 @@ func (d Discard) Handle(c net.Conn) net.Conn {
 	return nil
 }
 
-// BytesRequired returns how many bytes are required to detect DISCARD.
-func (d Discard) BytesRequired() int {
-	return 7
-}
-
 // Check checks the protocol.
-func (d Discard) Check(b []byte) bool {
-	return string(b[:7]) == "DISCARD"
+func (Discard) Check(b []byte) (bool, int) {
+	if len(b) < 7 {
+		return false, 7
+	}
+	return string(b[:7]) == "DISCARD", 0
 }
 
 // NewDiscard returns a new Discard protocol handler.

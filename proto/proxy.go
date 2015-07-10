@@ -1,6 +1,8 @@
 package proto
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"net"
 )
@@ -9,9 +11,13 @@ import (
 // the connection type. An example use would be redirecting the connection to a
 // non-Go SSH server.
 type Proxy struct {
-	matchString string
-	proto       string
-	dest        string
+	match []byte
+	proto string
+	dest  string
+}
+
+func (p *Proxy) String() string {
+	return fmt.Sprintf("Proxy [dest: %s]", p.dest)
 }
 
 // Handle dials the destination, and establishes a simple proxy between the
@@ -35,17 +41,15 @@ func (d *Proxy) Handle(c net.Conn) net.Conn {
 	return nil
 }
 
-// BytesRequired returns how many bytes are required to detect the protocol.
-func (d *Proxy) BytesRequired() int {
-	return len(d.matchString)
-}
-
 // Check checks the protocol.
-func (d *Proxy) Check(b []byte) bool {
-	return string(b) == d.matchString
+func (d *Proxy) Check(b []byte) (bool, int) {
+	if len(b) < len(d.match) {
+		return false, len(d.match)
+	}
+	return bytes.Compare(b, d.match) == 0, 0
 }
 
 // NewProxy returns a fully initialized Proxy.
-func NewProxy(matchString, proto, dest string) *Proxy {
-	return &Proxy{matchString, proto, dest}
+func NewProxy(match []byte, proto, dest string) *Proxy {
+	return &Proxy{match, proto, dest}
 }

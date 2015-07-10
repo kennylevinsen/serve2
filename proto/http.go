@@ -8,14 +8,18 @@ import (
 )
 
 var (
-	// HTTP method names used for detection.
-	methods = []string{"GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", "CONNECT", "PATCH"}
+	// HTTP method names used for detection. Must be sorted by length.
+	methods = []string{"GET", "PUT", "HEAD", "POST", "TRACE", "PATCH", "DELETE", "OPTIONS", "CONNECT"}
 )
 
 // HTTP provides a HTTP server in the form of a ProtocolHandler,
 // with a custom http.Handler provided by the user.
 type HTTP struct {
 	listener *utils.ChannelListener
+}
+
+func (HTTP) String() string {
+	return "HTTP"
 }
 
 // Setup installs the http handler, and stores the address for use of the
@@ -35,21 +39,20 @@ func (h *HTTP) Handle(c net.Conn) net.Conn {
 
 // Check looks through the known HTTP methods, returning true if there is a
 // match.
-func (h *HTTP) Check(header []byte) bool {
+func (h *HTTP) Check(header []byte) (bool, int) {
 	str := string(header)
 
 	for _, v := range methods {
+		if len(v) > len(header) {
+			// We need more data
+			return false, len(v)
+		}
 		if str[:len(v)] == v {
-			return true
+			return true, 0
 		}
 	}
-	return false
+	return false, 0
 
-}
-
-// BytesRequired returns how many bytes are required to detect HTTP.
-func (h *HTTP) BytesRequired() int {
-	return 7
 }
 
 // NewHTTP returns a fully initialized HTTP.

@@ -11,20 +11,22 @@ import (
 // receives, hence the name.
 type Echo struct{}
 
+func (Echo) String() string {
+	return "Echo"
+}
+
 // Handle implements the ECHO protocol.
-func (d Echo) Handle(c net.Conn) net.Conn {
+func (Echo) Handle(c net.Conn) net.Conn {
 	go io.Copy(c, c)
 	return nil
 }
 
-// BytesRequired returns how many bytes are required to detech ECHO.
-func (d Echo) BytesRequired() int {
-	return 4
-}
-
 // Check checks the protocol.
-func (d Echo) Check(b []byte) bool {
-	return string(b[:4]) == "ECHO"
+func (Echo) Check(b []byte) (bool, int) {
+	if len(b) < 4 {
+		return false, 4
+	}
+	return string(b[:4]) == "ECHO", 0
 }
 
 // NewEcho returns a new ECHO protocol handler.
