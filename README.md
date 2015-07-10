@@ -28,10 +28,10 @@ Nothing. I called the toy project "serve", and when making a new version I had t
 # Installation and documentation
 To get:
 
-    go get github.com/joushou/serve2
+      go get github.com/joushou/serve2
 
 More info and examples at:
 
-   https://godoc.org/github.com/joushou/serve2
-   https://godoc.org/github.com/joushou/serve2/proto
+      https://godoc.org/github.com/joushou/serve2
+      https://godoc.org/github.com/joushou/serve2/proto
 
