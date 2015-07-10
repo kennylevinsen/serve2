@@ -32,6 +32,6 @@ To get:
 
 More info and examples at:
 
-   https://godoc.org/github.com/Joushou/serve2
-   https://godoc.org/github.com/Joushou/serve2/proto
+   https://godoc.org/github.com/joushou/serve2
+   https://godoc.org/github.com/joushou/serve2/proto
 
