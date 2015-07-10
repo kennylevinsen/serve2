@@ -45,7 +45,7 @@ func (t *TLS) Handle(c net.Conn) net.Conn {
 // Check checks if the protocol is TLS
 func (t *TLS) Check(header []byte) (bool, int) {
 	if len(header) < 6 {
-		return false, 0
+		return false, 6
 	}
 
 	return header[0] == TLSHandshake &&
