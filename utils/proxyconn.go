@@ -8,8 +8,9 @@ import (
 // simply behaves like the net.Conn it wraps.
 type ProxyConn struct {
 	net.Conn
-	buffer []byte
-	active bool
+	buffer    []byte
+	storedErr error
+	active    bool
 }
 
 // Read reads data from the connection.  If buffer is available, it will try to
@@ -29,18 +30,19 @@ func (c *ProxyConn) Read(p []byte) (int, error) {
 			c.active = false
 			c.buffer = nil
 		}
-		return fromBuffer, nil
+		return fromBuffer, c.storedErr
 	}
 
 	return c.Conn.Read(p)
 }
 
 // NewProxyConn returns a fully initialized ProxyConn.
-func NewProxyConn(c net.Conn, buffer []byte) *ProxyConn {
+func NewProxyConn(c net.Conn, buffer []byte, storedErr error) *ProxyConn {
 	pc := ProxyConn{
-		Conn:   c,
-		buffer: buffer,
-		active: true,
+		Conn:      c,
+		buffer:    buffer,
+		storedErr: storedErr,
+		active:    len(buffer) > 0 || storedErr != nil,
 	}
 	return &pc
 }

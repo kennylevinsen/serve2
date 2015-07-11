@@ -41,17 +41,21 @@ func (h *HTTP) Handle(c net.Conn) net.Conn {
 // match.
 func (h *HTTP) Check(header []byte) (bool, int) {
 	str := string(header)
+	required := 0
 
 	for _, v := range methods {
-		if len(v) > len(header) {
-			// We need more data
-			return false, len(v)
-		}
-		if str[:len(v)] == v {
+		if len(v) > len(str) {
+			if v[:len(str)] == str {
+				// We found the smallest potential future match
+				required = len(v)
+				break
+			}
+		} else if str[:len(v)] == v {
 			return true, 0
 		}
 	}
-	return false, 0
+
+	return false, required
 
 }
 

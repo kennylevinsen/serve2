@@ -12,11 +12,9 @@ const (
 	DefaultBytesToCheck = 128
 )
 
+// Errors
 var (
-	// Errors
-	ErrReadFailed    = errors.New("read failed")
 	ErrGreedyHandler = errors.New("remaining handlers too greedy; protocol not recognized")
-	ErrNoMatch       = errors.New("protocol not recognized")
 )
 
 // ProtocolHandler is the protocol detection and handling interface used by
@@ -35,6 +33,10 @@ type ProtocolHandler interface {
 	// can return a net.Conn which will be thrown through the entire protocol
 	// management show again.
 	Handle(net.Conn) net.Conn
+
+	// String returns a pretty representation of the protocol to be used for
+	// logging purposes
+	String() string
 }
 
 // Logger is used to provide logging functionality for serve2
@@ -71,10 +73,6 @@ func (s *Server) AddHandlers(p ...ProtocolHandler) {
 // detect their protocol (lowest first), and stores the highest number of bytes
 // required.
 func (s *Server) prepareHandlers() {
-	if s.Logger != nil {
-		s.Logger("Sorting %d protocols", len(s.protocols))
-	}
-
 	var handlers []ProtocolHandler
 
 	for range s.protocols {
@@ -99,39 +97,56 @@ func (s *Server) prepareHandlers() {
 	_, s.minimumRead = handlers[0].Check(nil)
 
 	s.protocols = handlers
+
+	if s.Logger != nil {
+		s.Logger("Sorted %d protocols:", len(s.protocols))
+
+		for _, protocol := range s.protocols {
+			s.Logger("\t%v", protocol)
+		}
+	}
 }
 
-func (s *Server) handle(h ProtocolHandler, c net.Conn, header []byte) {
-	proxy := utils.NewProxyConn(c, header)
+func (s *Server) handle(h ProtocolHandler, c net.Conn, header []byte, readErr error) {
+	proxy := utils.NewProxyConn(c, header, readErr)
 	x := h.Handle(proxy)
 	if x != nil {
 		if s.Logger != nil {
-			s.Logger("Handler %v for %v is a transport, running again", h, c.RemoteAddr())
+			s.Logger("Handling connection %v as %v (transport)", c.RemoteAddr(), h)
 		}
 		s.HandleConnection(x)
+	} else {
+		if s.Logger != nil {
+			s.Logger("Handling connection %v as %v", c.RemoteAddr(), h)
+		}
 	}
 }
 
 // HandleConnection runs a connection through protocol detection and handling
 // as needed.
 func (s *Server) HandleConnection(c net.Conn) error {
-	var failureReason error
+	var (
+		failureReason, err error
+		n                  int
+	)
 
 	header := make([]byte, 0, s.BytesToCheck)
-	c.Read(header) // Read a bit of data
 
 	handlers := make([]ProtocolHandler, len(s.protocols))
 	copy(handlers, s.protocols)
 
 	smallest := s.minimumRead
+
+	// This loop runs until we are out of candidate handlers, or until a handler
+	// is selected.
 	for len(handlers) > 0 {
 		// Read the required data
-		n, err := c.Read(header[len(header):smallest])
+		n, err = c.Read(header[len(header):smallest])
 		header = header[:len(header)+n]
 
 		if n == 0 && err != nil {
 			// Can't read anything
-			failureReason = ErrReadFailed
+			failureReason = err
 			break
 		}
 
@@ -141,49 +156,58 @@ func (s *Server) HandleConnection(c net.Conn) error {
 		}
 
 		smallest = -1
+
+		// We run the current data through all candidate handlers.
 		for i := 0; i < len(handlers); i++ {
 			handler := handlers[i]
 
 			ok, required := handler.Check(header)
 			if ok {
-				if s.Logger != nil {
-					s.Logger("Handling connection %v as %v", c.RemoteAddr(), handler)
-				}
-				s.handle(handler, c, header)
+				s.handle(handler, c, header, err)
 				return nil
 			}
 
 			if required == 0 {
-				// The handler is 100% that it doesn't match, so remove it
+				// The handler is sure that it doesn't match, so remove it.
 				handlers = append(handlers[:i], handlers[i+1:]...)
 				i--
-			} else {
-				// The handler is unsure and needs more data
-				if smallest == -1 || required < smallest {
-					smallest = required
+			} else if required <= len(header) {
+				// Handler is broken, requesting less than we already gave it, so
+				// we remove it.
+				if s.Logger != nil {
+					s.Logger("Handler %v is requesting %d bytes, but already read %d bytes. Skipping.",
+						handler, required, len(header))
 				}
+
+				handlers = append(handlers[:i], handlers[i+1:]...)
+				i--
+			} else if smallest == -1 || required < smallest {
+				// The handler needs more data to be certain.
+				smallest = required
 			}
 
 		}
 
 		if smallest > s.BytesToCheck {
 			// The handlers want more data than we're allowed to read
+			if s.Logger != nil {
+				s.Logger("Next check requires %d bytes, but maximum read size set to %d",
+					smallest, s.BytesToCheck)
+			}
 			failureReason = ErrGreedyHandler
-			break
-		}
-
-		if err != nil {
-			// We can't read anymore
-			failureReason = ErrNoMatch
 			break
 		}
 	}
 
+	if failureReason != nil && s.Logger != nil {
+		s.Logger("Protocol detection failure: %v", failureReason)
+	}
+
 	if s.DefaultProtocol != nil {
 		if s.Logger != nil {
-			s.Logger("Defaulting %v to %v: [%v]", c.RemoteAddr(), s.DefaultProtocol, header)
+			s.Logger("Defaulting %v: [%q]", c.RemoteAddr(), header)
 		}
-		s.handle(s.DefaultProtocol, c, header)
+		s.handle(s.DefaultProtocol, c, header, err)
 		return nil
 	}
 

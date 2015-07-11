@@ -22,8 +22,8 @@ func (p *Proxy) String() string {
 
 // Handle dials the destination, and establishes a simple proxy between the
 // connecting party and the destination.
-func (d *Proxy) Handle(c net.Conn) net.Conn {
-	pconn, err := net.Dial(d.proto, d.dest)
+func (p *Proxy) Handle(c net.Conn) net.Conn {
+	pconn, err := net.Dial(p.proto, p.dest)
 	if err != nil {
 		return nil
 	}
@@ -42,11 +42,11 @@ func (d *Proxy) Handle(c net.Conn) net.Conn {
 }
 
 // Check checks the protocol.
-func (d *Proxy) Check(b []byte) (bool, int) {
-	if len(b) < len(d.match) {
-		return false, len(d.match)
+func (p *Proxy) Check(b []byte) (bool, int) {
+	if len(b) < len(p.match) {
+		return false, len(p.match)
 	}
-	return bytes.Compare(b, d.match) == 0, 0
+	return bytes.Compare(b[:len(p.match)], p.match) == 0, 0
 }
 
 // NewProxy returns a fully initialized Proxy.

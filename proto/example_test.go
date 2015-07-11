@@ -32,7 +32,7 @@ func ExampleNewProxy() {
 	server := serve2.New()
 
 	// SSH just so happens to send "SSH" and version number as the first thing
-	proxy := proto.NewProxy("SSH", "tcp", "localhost:22")
+	proxy := proto.NewProxy([]byte("SSH"), "tcp", "localhost:22")
 
 	server.AddHandlers(proxy)
 	l, err := net.Listen("tcp", ":8080")

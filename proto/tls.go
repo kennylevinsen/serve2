@@ -7,8 +7,8 @@ import (
 
 // TLS field constants
 const (
-	TLSMajor        = 0x03
-	TLSHighestMinor = 0x04 // Bump when new releases are made available
+	TLSMajor        = tls.VersionTLS12 >> 8
+	TLSHighestMinor = tls.VersionTLS12 & 0xFF // Bump when new releases are made available
 	TLSHandshake    = 0x16
 	TLSClientHello  = 0x01
 )
