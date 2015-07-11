@@ -34,7 +34,7 @@ To get:
       go get github.com/joushou/serve2
 
 More info and examples at:
-* [https://godoc.org/github.com/joushou/serve2] (The core itself)
-* [https://godoc.org/github.com/joushou/serve2/proto] (The bundled ProtocolHandlers)
-* [https://godoc.org/github.com/joushou/serve2/utils] (Utilities like ProxyConna and ChannelListener)
+* https://godoc.org/github.com/joushou/serve2 (The core itself)
+* https://godoc.org/github.com/joushou/serve2/proto (The bundled ProtocolHandlers)
+* https://godoc.org/github.com/joushou/serve2/utils (Utilities like ProxyConn and ChannelListener)
 
