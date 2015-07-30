@@ -32,7 +32,7 @@ type ProtocolHandler interface {
 	// Handle manages the protocol. In case of an encapsulating protocol, Handle
 	// can return a net.Conn which will be thrown through the entire protocol
 	// management show again.
-	Handle(net.Conn) net.Conn
+	Handle(net.Conn) (net.Conn, error)
 
 	// String returns a pretty representation of the protocol to be used for
 	// logging purposes
@@ -109,15 +109,19 @@ func (s *Server) prepareHandlers() {
 
 func (s *Server) handle(h ProtocolHandler, c net.Conn, header []byte, readErr error) {
 	proxy := utils.NewProxyConn(c, header, readErr)
-	x := h.Handle(proxy)
+	x, err := h.Handle(proxy)
+	if err != nil {
+		s.Logger("Handling %v as %v failed: %v", c.RemoteAddr(), h, err)
+	}
+
 	if x != nil {
 		if s.Logger != nil {
-			s.Logger("Handling connection %v as %v (transport)", c.RemoteAddr(), h)
+			s.Logger("Handling %v as %v (transport)", c.RemoteAddr(), h)
 		}
 		s.HandleConnection(x)
 	} else {
 		if s.Logger != nil {
-			s.Logger("Handling connection %v as %v", c.RemoteAddr(), h)
+			s.Logger("Handling %v as %v", c.RemoteAddr(), h)
 		}
 	}
 }

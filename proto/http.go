@@ -32,9 +32,9 @@ func (h *HTTP) Setup(handler http.Handler) {
 }
 
 // Handle pushes the connection to the HTTP server.
-func (h *HTTP) Handle(c net.Conn) net.Conn {
+func (h *HTTP) Handle(c net.Conn) (net.Conn, error) {
 	h.listener.Push(c)
-	return nil
+	return nil, nil
 }
 
 // Check looks through the known HTTP methods, returning true if there is a

@@ -13,7 +13,7 @@ func (Discard) String() string {
 }
 
 // Handle implements the DISCARD protocol (discarding all data).
-func (Discard) Handle(c net.Conn) net.Conn {
+func (Discard) Handle(c net.Conn) (net.Conn, error) {
 	go func(conn net.Conn) {
 		s := make([]byte, 1024)
 		for {
@@ -24,7 +24,7 @@ func (Discard) Handle(c net.Conn) net.Conn {
 		}
 	}(c)
 
-	return nil
+	return nil, nil
 }
 
 // Check checks the protocol.

@@ -38,8 +38,8 @@ func (t *TLS) Setup(protos []string, cert, key string) error {
 }
 
 // Handle returns a connection with TLS abstracted away.
-func (t *TLS) Handle(c net.Conn) net.Conn {
-	return tls.Server(c, t.config)
+func (t *TLS) Handle(c net.Conn) (net.Conn, error) {
+	return tls.Server(c, t.config), nil
 }
 
 // Check checks if the protocol is TLS

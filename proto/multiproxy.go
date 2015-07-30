@@ -3,7 +3,6 @@ package proto
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"net"
 	"sort"
 )
@@ -32,23 +31,8 @@ func (p *MultiProxy) String() string {
 
 // Handle dials the destination, and establishes a simple proxy between the
 // connecting party and the destination.
-func (p *MultiProxy) Handle(c net.Conn) net.Conn {
-	pconn, err := net.Dial(p.proto, p.dest)
-	if err != nil {
-		return nil
-	}
-
-	// MultiProxy the connection
-	go func() {
-		io.Copy(pconn, c)
-		pconn.Close()
-	}()
-	go func() {
-		io.Copy(c, pconn)
-		c.Close()
-	}()
-
-	return nil
+func (p *MultiProxy) Handle(c net.Conn) (net.Conn, error) {
+	return nil, proxy(c, p.proto, p.dest)
 }
 
 // Check checks the protocol.

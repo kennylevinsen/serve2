@@ -16,9 +16,9 @@ func (Echo) String() string {
 }
 
 // Handle implements the ECHO protocol.
-func (Echo) Handle(c net.Conn) net.Conn {
+func (Echo) Handle(c net.Conn) (net.Conn, error) {
 	go io.Copy(c, c)
-	return nil
+	return nil, nil
 }
 
 // Check checks the protocol.
