@@ -17,9 +17,8 @@ var (
 	ErrGreedyHandler = errors.New("remaining handlers too greedy")
 )
 
-// ProtocolHandler is the protocol detection and handling interface used by
-// serve2.
-type ProtocolHandler interface {
+// Protocol is the protocol detection and handling interface used by serve2.
+type Protocol interface {
 	// Check informs if the bytes match the protocol. If there is not enough
 	// data yet, it should return false and the wanted amount of bytes, allowing
 	// future calls when more data is available. It does not need to return the
@@ -27,25 +26,27 @@ type ProtocolHandler interface {
 	// allowed. Returning false and 0 bytes needed means that the protocol
 	// handler is 100% sure that this is not the proper protocol, and will not
 	// result in any further calls.
-	Check([]byte) (ok bool, needed int)
+	// Check, when called with nil, nil, must return false, N, where N is the
+	// smallest amount of bytes that makes sense to call Check with.
+	Check(header []byte, hints []interface{}) (ok bool, needed int)
 
 	// Handle manages the protocol. In case of an encapsulating protocol, Handle
 	// can return a net.Conn which will be thrown through the entire protocol
 	// management show again.
-	Handle(net.Conn) (net.Conn, error)
+	Handle(c net.Conn) (net.Conn, error)
 
 	// String returns a pretty representation of the protocol to be used for
-	// logging purposes
+	// logging purposes.
 	String() string
 }
 
 // Logger is used to provide logging functionality for serve2
 type Logger func(format string, v ...interface{})
 
-// Server handles a set of ProtocolHandlers.
+// Server handles a set of Protocols.
 type Server struct {
 	// DefaultProtocol is the protocol fallback if no match is made
-	DefaultProtocol ProtocolHandler
+	DefaultProtocol Protocol
 
 	// Logger is used for logging if set
 	Logger Logger
@@ -53,17 +54,17 @@ type Server struct {
 	// BytesToCheck is the max amount of bytes to check
 	BytesToCheck int
 
-	protocols   []ProtocolHandler
+	protocols   []Protocol
 	minimumRead int
 }
 
-// AddHandler registers a ProtocolHandler
-func (s *Server) AddHandler(p ProtocolHandler) {
+// AddHandler registers a Protocol
+func (s *Server) AddHandler(p Protocol) {
 	s.protocols = append(s.protocols, p)
 }
 
-// AddHandlers registers a set of ProtocolHandlers
-func (s *Server) AddHandlers(p ...ProtocolHandler) {
+// AddHandlers registers a set of Protocols
+func (s *Server) AddHandlers(p ...Protocol) {
 	for _, ph := range p {
 		s.AddHandler(ph)
 	}
@@ -73,17 +74,17 @@ func (s *Server) AddHandlers(p ...ProtocolHandler) {
 // detect their protocol (lowest first), and stores the highest number of bytes
 // required.
 func (s *Server) prepareHandlers() {
-	var handlers []ProtocolHandler
+	var handlers []Protocol
 
 	for range s.protocols {
 		smallest := -1
 		for i, v := range s.protocols {
 			var contestant, current int
-			_, contestant = v.Check(nil)
+			_, contestant = v.Check(nil, nil)
 			if smallest == -1 {
 				smallest = i
 			} else {
-				_, current = s.protocols[smallest].Check(nil)
+				_, current = s.protocols[smallest].Check(nil, nil)
 				if contestant < current {
 					smallest = i
 				}
@@ -94,7 +95,7 @@ func (s *Server) prepareHandlers() {
 		s.protocols = append(s.protocols[:smallest], s.protocols[smallest+1:]...)
 	}
 
-	_, s.minimumRead = handlers[0].Check(nil)
+	_, s.minimumRead = handlers[0].Check(nil, nil)
 
 	s.protocols = handlers
 
@@ -107,18 +108,23 @@ func (s *Server) prepareHandlers() {
 	}
 }
 
-func (s *Server) handle(h ProtocolHandler, c net.Conn, header []byte, readErr error) {
+func (s *Server) handle(h Protocol, c net.Conn, hints []interface{}, header []byte, readErr error) {
 	proxy := utils.NewProxyConn(c, header, readErr)
-	x, err := h.Handle(proxy)
+	proxy.SetHints(hints)
+
+	transport, err := h.Handle(proxy)
 	if err != nil {
 		s.Logger("Handling %v as %v failed: %v", c.RemoteAddr(), h, err)
 	}
 
-	if x != nil {
+	if transport != nil {
 		if s.Logger != nil {
 			s.Logger("Handling %v as %v (transport)", c.RemoteAddr(), h)
 		}
-		s.HandleConnection(x)
+		if x, ok := transport.(utils.HintedConn); ok {
+			hints = x.Hints()
+		}
+		s.HandleConnection(transport, hints)
 	} else {
 		if s.Logger != nil {
 			s.Logger("Handling %v as %v", c.RemoteAddr(), h)
@@ -128,15 +134,18 @@ func (s *Server) handle(h ProtocolHandler, c net.Conn, header []byte, readErr er
 
 // HandleConnection runs a connection through protocol detection and handling
 // as needed.
-func (s *Server) HandleConnection(c net.Conn) error {
+func (s *Server) HandleConnection(c net.Conn, hints []interface{}) error {
 	var (
 		failureReason, err error
 		n                  int
+		header             = make([]byte, 0, s.BytesToCheck)
+		handlers           = make([]Protocol, len(s.protocols))
 	)
 
-	header := make([]byte, 0, s.BytesToCheck)
+	if hints == nil {
+		hints = make([]interface{}, 0)
+	}
 
-	handlers := make([]ProtocolHandler, len(s.protocols))
 	copy(handlers, s.protocols)
 
 	smallest := s.minimumRead
@@ -165,9 +174,9 @@ func (s *Server) HandleConnection(c net.Conn) error {
 		for i := 0; i < len(handlers); i++ {
 			handler := handlers[i]
 
-			ok, required := handler.Check(header)
+			ok, required := handler.Check(header, hints)
 			if ok {
-				s.handle(handler, c, header, err)
+				s.handle(handler, c, hints, header, err)
 				return nil
 			}
 
@@ -211,7 +220,7 @@ func (s *Server) HandleConnection(c net.Conn) error {
 		if s.Logger != nil {
 			s.Logger("Defaulting %v: [%q]", c.RemoteAddr(), header)
 		}
-		s.handle(s.DefaultProtocol, c, header, err)
+		s.handle(s.DefaultProtocol, c, hints, header, err)
 		return nil
 	}
 
@@ -233,7 +242,7 @@ func (s *Server) Serve(l net.Listener) {
 		}
 
 		go func() {
-			s.HandleConnection(conn)
+			s.HandleConnection(conn, nil)
 		}()
 	}
 }

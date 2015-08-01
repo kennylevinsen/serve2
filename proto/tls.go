@@ -3,6 +3,8 @@ package proto
 import (
 	"crypto/tls"
 	"net"
+
+	"github.com/joushou/serve2/utils"
 )
 
 // TLS field constants
@@ -37,13 +39,16 @@ func (t *TLS) Setup(protos []string, cert, key string) error {
 	return err
 }
 
-// Handle returns a connection with TLS abstracted away.
+// Handle returns a connection with TLS abstracted away. Adds the tls.Conn for
+// the connection as a hint.
 func (t *TLS) Handle(c net.Conn) (net.Conn, error) {
-	return tls.Server(c, t.config), nil
+	s := tls.Server(c, t.config)
+	hints := append(utils.GetHints(c), s)
+	return utils.NewHintConn(s, hints), nil
 }
 
 // Check checks if the protocol is TLS
-func (t *TLS) Check(header []byte) (bool, int) {
+func (t *TLS) Check(header []byte, _ []interface{}) (bool, int) {
 	if len(header) < 6 {
 		return false, 6
 	}

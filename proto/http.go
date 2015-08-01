@@ -1,8 +1,6 @@
 package proto
 
-import (
-	"net/http"
-)
+import "net/http"
 
 var (
 	// HTTP method names used for detection. Must be sorted by length.
@@ -11,7 +9,7 @@ var (
 
 // Check looks through the known HTTP methods, returning true if there is a
 // match.
-func checker(header []byte) (bool, int) {
+func checker(header []byte, _ []interface{}) (bool, int) {
 	str := string(header)
 	required := 0
 

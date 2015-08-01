@@ -28,7 +28,7 @@ func TestHTTP(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		match, required := h.Check(test.payload)
+		match, required := h.Check(test.payload, nil)
 		if test.match != match {
 			t.Errorf("match not correct for %q: was %t, expected %t",
 				test.payload, match, test.match)

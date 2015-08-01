@@ -4,13 +4,60 @@ import (
 	"net"
 )
 
+// HintedConn describes a net.Conn which also provides hints about transports.
+type HintedConn interface {
+	net.Conn
+
+	// Hints retrieves the current hints.
+	Hints() []interface{}
+}
+
+// HintConn is a simple net.Conn wrapper implemented HintedConn.
+type HintConn struct {
+	net.Conn
+	hints []interface{}
+}
+
+// Hints retrieves the current hints.
+func (h *HintConn) Hints() []interface{} {
+	return h.hints
+}
+
+// NewHintConn provides a new *HintConn.
+func NewHintConn(c net.Conn, hints []interface{}) *HintConn {
+	return &HintConn{
+		Conn:  c,
+		hints: hints,
+	}
+}
+
+// GetHints is a convenience function for retrieving hints from a net.Conn if
+// available, otherwise returning nil.
+func GetHints(c net.Conn) []interface{} {
+	if hintedConn, ok := c.(HintedConn); ok {
+		return hintedConn.Hints()
+	}
+	return nil
+}
+
 // ProxyConn simulates reads for the buffered content. When buffer is empty, it
 // simply behaves like the net.Conn it wraps.
 type ProxyConn struct {
 	net.Conn
+	hints     []interface{}
 	buffer    []byte
 	storedErr error
 	active    bool
+}
+
+// Hints return the stored hints.
+func (c *ProxyConn) Hints() []interface{} {
+	return c.hints
+}
+
+// SetHints sets the stored hints.
+func (c *ProxyConn) SetHints(hints []interface{}) {
+	c.hints = hints
 }
 
 // Read reads data from the connection.  If buffer is available, it will try to

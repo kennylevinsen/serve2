@@ -6,9 +6,9 @@ import (
 	"github.com/joushou/serve2/utils"
 )
 
-// ListenChecker is the provided Check function, identical to
+// ListenChecker is the provided Check function for ListenProxy, identical to
 // ProtocolHandler.Check
-type ListenChecker func(header []byte) (match bool, required int)
+type ListenChecker func(header []byte, hints []interface{}) (match bool, required int)
 
 // ListenProxy provides a net.Listener whose Accept will only return matched
 // protocols.
@@ -33,8 +33,8 @@ func (l *ListenProxy) Handle(c net.Conn) (net.Conn, error) {
 }
 
 // Check just calls the ListenChecker.
-func (l *ListenProxy) Check(header []byte) (bool, int) {
-	return l.Checker(header)
+func (l *ListenProxy) Check(header []byte, hints []interface{}) (bool, int) {
+	return l.Checker(header, hints)
 }
 
 // NewListenProxy returns a fully initialized ListenProxy.
