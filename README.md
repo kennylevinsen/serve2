@@ -1,4 +1,4 @@
-# serve2
+# serve2 [![GoDoc](https://godoc.org/github.com/joushou/serve2?status.svg)](http://godoc.org/github.com/joushou/serve2)
 A protocol detecting server library
 
 serve2 accepts a connection, and runs it through the active ProtocolHandlers, reading the smallest amount of data necessary to identify the protocol. ProtocolHandlers do not need to be certain about how much data they need up front - they can ask for more as needed. A default ProtocolHandler can be used when the server fails to identify the protocol, or one can rely on the default behaviour that closes the socket.
