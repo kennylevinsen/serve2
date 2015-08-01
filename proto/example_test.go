@@ -1,6 +1,7 @@
 package proto_test
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"net/http"
@@ -78,7 +79,6 @@ func (h *HTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "<!DOCTYPE html><html><head></head><body>Welcome to %s</body></html>", r.URL.Path)
-
 }
 
 func ExampleNewHTTP() {
@@ -94,5 +94,51 @@ func ExampleNewHTTP() {
 	}
 
 	server.Serve(l)
+}
 
+func ExampleNewMultiProxy() {
+	server := serve2.New()
+
+	httpMethods := [][]byte{
+		[]byte("GET"),
+		[]byte("POST"),
+	}
+
+	mp := proto.NewMultiProxy(httpMethods, "tcp", "localhost:80")
+
+	server.AddHandlers(mp)
+	l, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
+	server.Serve(l)
+}
+
+func ExampleNewListenProxy() {
+	server := serve2.New()
+
+	checker := func(header []byte) (match bool, required int) {
+		if len(header) < 3 {
+			return false, 3
+		}
+
+		if bytes.Compare(header[:3], []byte("GET")) == 0 {
+			return true, 0
+		} else {
+			return false, 0
+		}
+	}
+
+	lp := proto.NewListenProxy(checker, 10)
+
+	go http.Serve(lp.Listener(), &HTTPHandler{})
+
+	server.AddHandlers(lp)
+	l, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
+	server.Serve(l)
 }
