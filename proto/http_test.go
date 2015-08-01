@@ -5,7 +5,7 @@ import (
 )
 
 func TestHTTP(t *testing.T) {
-	h := HTTP{}
+	h := NewHTTP(nil)
 
 	tests := []struct {
 		payload  []byte

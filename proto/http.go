@@ -1,10 +1,7 @@
 package proto
 
 import (
-	"net"
 	"net/http"
-
-	"github.com/joushou/serve2/utils"
 )
 
 var (
@@ -12,34 +9,9 @@ var (
 	methods = []string{"GET", "PUT", "HEAD", "POST", "TRACE", "PATCH", "DELETE", "OPTIONS", "CONNECT"}
 )
 
-// HTTP provides a HTTP server in the form of a ProtocolHandler,
-// with a custom http.Handler provided by the user.
-type HTTP struct {
-	listener *utils.ChannelListener
-}
-
-func (HTTP) String() string {
-	return "HTTP"
-}
-
-// Setup installs the http handler, and stores the address for use of the
-// ChannelListener.
-func (h *HTTP) Setup(handler http.Handler) {
-	h.listener = utils.NewChannelListener(make(chan net.Conn, 10), nil)
-
-	httpServer := http.Server{Addr: ":http", Handler: handler}
-	go httpServer.Serve(h.listener)
-}
-
-// Handle pushes the connection to the HTTP server.
-func (h *HTTP) Handle(c net.Conn) (net.Conn, error) {
-	h.listener.Push(c)
-	return nil, nil
-}
-
 // Check looks through the known HTTP methods, returning true if there is a
 // match.
-func (h *HTTP) Check(header []byte) (bool, int) {
+func checker(header []byte) (bool, int) {
 	str := string(header)
 	required := 0
 
@@ -56,12 +28,15 @@ func (h *HTTP) Check(header []byte) (bool, int) {
 	}
 
 	return false, required
-
 }
 
-// NewHTTP returns a fully initialized HTTP.
-func NewHTTP(handler http.Handler) *HTTP {
-	h := HTTP{}
-	h.Setup(handler)
-	return &h
+// NewHTTP returns a ListenProxy with a http as the listening service. This is
+// a convenience wrapper kept in place for compatibility with older checkouts.
+// Might be removed in the future.
+func NewHTTP(handler http.Handler) *ListenProxy {
+	lp := NewListenProxy(checker, 10)
+
+	httpServer := http.Server{Addr: ":http", Handler: handler}
+	go httpServer.Serve(lp.Listener())
+	return lp
 }
