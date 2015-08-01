@@ -1,4 +1,4 @@
-# serve2 [![GoDoc](https://godoc.org/github.com/joushou/serve2?status.svg)](http://godoc.org/github.com/joushou/serve2) [![Join the chat at https://gitter.im/joushou/serve2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/joushou/serve2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# serve2 [![GoDoc](https://godoc.org/github.com/joushou/serve2?status.svg)](http://godoc.org/github.com/joushou/serve2) [![Join the chat at https://gitter.im/joushou/serve2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/joushou/serve2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)[![Build Status](https://travis-ci.org/joushou/serve2.svg?branch=master)](https://travis-ci.org/joushou/serve2)
 
 A protocol detecting server library
 
