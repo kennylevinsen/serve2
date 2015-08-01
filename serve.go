@@ -14,7 +14,7 @@ const (
 
 // Errors
 var (
-	ErrGreedyHandler = errors.New("remaining handlers too greedy; protocol not recognized")
+	ErrGreedyHandler = errors.New("remaining handlers too greedy")
 )
 
 // ProtocolHandler is the protocol detection and handling interface used by
