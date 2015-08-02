@@ -1,6 +1,6 @@
 # serve2 [![Join the chat at https://gitter.im/joushou/serve2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/joushou/serve2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![GoDoc](https://godoc.org/github.com/joushou/serve2?status.svg)](http://godoc.org/github.com/joushou/serve2) [![Build Status](https://travis-ci.org/joushou/serve2.svg?branch=master)](https://travis-ci.org/joushou/serve2)
 
-A protocol detecting server library
+A protocol detecting server library. For examples. look at the docs for the github.com/joushou/serve2/proto package: [![GoDoc](https://godoc.org/github.com/joushou/serve2/proto?status.svg)](http://godoc.org/github.com/joushou/serve2/proto).
 
 serve2 accepts a connection, and runs it through the active ProtocolHandlers, reading the smallest amount of data necessary to identify the protocol. ProtocolHandlers do not need to be certain about how much data they need up front - they can ask for more as needed. A default ProtocolHandler can be used when the server fails to identify the protocol, or one can rely on the default behaviour that closes the socket.
 
