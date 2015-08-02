@@ -1,6 +1,6 @@
 # serve2 [![Join the chat at https://gitter.im/joushou/serve2](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/joushou/serve2?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![GoDoc](https://godoc.org/github.com/joushou/serve2?status.svg)](http://godoc.org/github.com/joushou/serve2) [![Build Status](https://travis-ci.org/joushou/serve2.svg?branch=master)](https://travis-ci.org/joushou/serve2)
 
-A protocol detecting server library. For examples. look at the docs for the github.com/joushou/serve2/proto package: [![GoDoc](https://godoc.org/github.com/joushou/serve2/proto?status.svg)](http://godoc.org/github.com/joushou/serve2/proto).
+A protocol detecting server library. For examples. look at the docs for the github.com/joushou/serve2/proto package.
 
 serve2 accepts a connection, and runs it through the active ProtocolHandlers, reading the smallest amount of data necessary to identify the protocol. ProtocolHandlers do not need to be certain about how much data they need up front - they can ask for more as needed. A default ProtocolHandler can be used when the server fails to identify the protocol, or one can rely on the default behaviour that closes the socket.
 
@@ -9,6 +9,16 @@ ProtocolHandlers can implement transports themselves, by returning a new net.Con
 serve2 comes with a set of ProtocolHandlers ready for consumption, in the form of TLS, HTTP (consuming a http.Handler), ECHO and DISCARD. There is also a very convenient Proxy ProtocolHandler, which instead of managing the protocol itself simply checks for a predefined set of bytes, and when matched, dials a configured service, leaving the actual protocol up to someone else. This is useful for things like SSH.
 
 Ensuring that the read bytes are fed back in is done by ProxyConn, a net.Conn-implementing type with a buffered Read.
+
+# Installation and documentation
+To get:
+
+      go get github.com/joushou/serve2
+
+More info and examples at:
+* https://godoc.org/github.com/joushou/serve2 (The core itself)
+* https://godoc.org/github.com/joushou/serve2/proto (The bundled ProtocolHandlers and example uses)
+* https://godoc.org/github.com/joushou/serve2/utils (Utilities like ProxyConn and ChannelListener)
 
 # Why?
 Well, I always kind of wanted to make something that could understand *everything*. I get those kinds of ideas occasionally. At one point I remembered that idea, and hving gotten caught by the Go fever, I thought I'd try it out in Go, which proved to be very suitable for the idea.
@@ -28,14 +38,4 @@ This depends heavily on both the quantity of registered handlers, and the indivi
 
 # What does the name mean?
 Nothing. I called the toy project "serve", and when making a new version I had to use a new folder name, and so "serve2" was born.
-
-# Installation and documentation
-To get:
-
-      go get github.com/joushou/serve2
-
-More info and examples at:
-* https://godoc.org/github.com/joushou/serve2 (The core itself)
-* https://godoc.org/github.com/joushou/serve2/proto (The bundled ProtocolHandlers)
-* https://godoc.org/github.com/joushou/serve2/utils (Utilities like ProxyConn and ChannelListener)
 
