@@ -40,6 +40,9 @@ type Protocol interface {
 	String() string
 }
 
+// ProtocolHandler is a legacy alias for Protocol
+type ProtocolHandler Protocol
+
 // Logger is used to provide logging functionality for serve2
 type Logger func(format string, v ...interface{})
 
@@ -124,7 +127,7 @@ func (s *Server) handle(h Protocol, c net.Conn, hints []interface{}, header []by
 		if x, ok := transport.(utils.HintedConn); ok {
 			hints = x.Hints()
 		}
-		s.HandleConnection(transport, hints)
+		s.HandleConn(transport, hints)
 	} else {
 		if s.Logger != nil {
 			s.Logger("Handling %v as %v", c.RemoteAddr(), h)
@@ -132,14 +135,14 @@ func (s *Server) handle(h Protocol, c net.Conn, hints []interface{}, header []by
 	}
 }
 
-// HandleConnection runs a connection through protocol detection and handling
-// as needed.
-func (s *Server) HandleConnection(c net.Conn, hints []interface{}) error {
+// HandleConn runs a connection through protocol detection and handling as
+// needed.
+func (s *Server) HandleConn(c net.Conn, hints []interface{}) error {
 	var (
-		failureReason, err error
-		n                  int
-		header             = make([]byte, 0, s.BytesToCheck)
-		handlers           = make([]Protocol, len(s.protocols))
+		err      error
+		n        int
+		header   = make([]byte, 0, s.BytesToCheck)
+		handlers = make([]Protocol, len(s.protocols))
 	)
 
 	if hints == nil {
@@ -148,72 +151,63 @@ func (s *Server) HandleConnection(c net.Conn, hints []interface{}) error {
 
 	copy(handlers, s.protocols)
 
-	smallest := s.minimumRead
-
 	// This loop runs until we are out of candidate handlers, or until a handler
 	// is selected.
 	for len(handlers) > 0 {
 		// Read the required data
-		n, err = c.Read(header[len(header):smallest])
+		n, err = c.Read(header[len(header):cap(header)])
 		header = header[:len(header)+n]
 
-		if n == 0 && err != nil {
-			// Can't read anything
-			failureReason = err
-			break
-		}
-
-		if len(header) < smallest {
-			// We don't have enough data, try to read some more
+		if n == 0 && err == nil {
+			// Nothing read, but connection isn't dead yet
 			continue
 		}
 
-		smallest = -1
+		if n == 0 && err != nil {
+			// Can't read anything
+			break
+		}
 
 		// We run the current data through all candidate handlers.
 		for i := 0; i < len(handlers); i++ {
 			handler := handlers[i]
 
 			ok, required := handler.Check(header, hints)
-			if ok {
+			switch {
+			case ok:
+				// THe handler accepted the connection
 				s.handle(handler, c, hints, header, err)
 				return nil
-			}
-
-			if required == 0 {
+			case required == 0:
 				// The handler is sure that it doesn't match, so remove it.
-				handlers = append(handlers[:i], handlers[i+1:]...)
-				i--
-			} else if required <= len(header) {
-				// Handler is broken, requesting less than we already gave it, so
+			case required <= len(header):
+				// The handler is broken, requesting less than we already gave it, so
 				// we remove it.
 				if s.Logger != nil {
 					s.Logger("Handler %v is requesting %d bytes, but already read %d bytes. Skipping.",
 						handler, required, len(header))
 				}
 
-				handlers = append(handlers[:i], handlers[i+1:]...)
-				i--
-			} else if smallest == -1 || required < smallest {
-				// The handler needs more data to be certain.
-				smallest = required
+			case required > s.BytesToCheck:
+				// The handler is being greedy, so we remove it.
+				if s.Logger != nil {
+					s.Logger("Handler %v is requesting %d bytes, but maximum read size set to %d. Skipping.",
+						handler, required, s.BytesToCheck)
+				}
+
+			default:
+				// The handler is not certain, so we leave it be.
+				continue
 			}
 
-		}
+			handlers = append(handlers[:i], handlers[i+1:]...)
+			i--
 
-		if smallest > s.BytesToCheck {
-			// The handlers want more data than we're allowed to read
-			if s.Logger != nil {
-				s.Logger("Next check requires %d bytes, but maximum read size set to %d",
-					smallest, s.BytesToCheck)
-			}
-			failureReason = ErrGreedyHandler
-			break
 		}
 	}
 
-	if failureReason != nil && s.Logger != nil {
-		s.Logger("Protocol detection failure: %v", failureReason)
+	if err != nil && s.Logger != nil {
+		s.Logger("Protocol detection failure: %v", err)
 	}
 
 	if s.DefaultProtocol != nil {
@@ -228,8 +222,9 @@ func (s *Server) HandleConnection(c net.Conn, hints []interface{}) error {
 	if s.Logger != nil {
 		s.Logger("Handling %v failed: [%v]", c.RemoteAddr(), header)
 	}
+
 	c.Close()
-	return failureReason
+	return err
 }
 
 // Serve accepts connections on a listener, handling them as appropriate.
@@ -242,7 +237,7 @@ func (s *Server) Serve(l net.Listener) {
 		}
 
 		go func() {
-			s.HandleConnection(conn, nil)
+			s.HandleConn(conn, nil)
 		}()
 	}
 }
