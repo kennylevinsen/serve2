@@ -22,7 +22,7 @@ func (Echo) Handle(c net.Conn) (net.Conn, error) {
 }
 
 // Check checks the protocol.
-func (Echo) Check(b []byte) (bool, int) {
+func (Echo) Check(b []byte, _ []interface{}) (bool, int) {
 	if len(b) < 4 {
 		return false, 4
 	}

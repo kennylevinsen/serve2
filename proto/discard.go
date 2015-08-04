@@ -28,7 +28,7 @@ func (Discard) Handle(c net.Conn) (net.Conn, error) {
 }
 
 // Check checks the protocol.
-func (Discard) Check(b []byte) (bool, int) {
+func (Discard) Check(b []byte, _ []interface{}) (bool, int) {
 	if len(b) < 7 {
 		return false, 7
 	}

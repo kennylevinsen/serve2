@@ -118,7 +118,7 @@ func ExampleNewMultiProxy() {
 func ExampleNewListenProxy() {
 	server := serve2.New()
 
-	checker := func(header []byte) (match bool, required int) {
+	checker := func(header []byte, _ []interface{}) (match bool, required int) {
 		if len(header) < 3 {
 			return false, 3
 		}

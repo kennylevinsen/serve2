@@ -55,7 +55,7 @@ func (p *Proxy) Handle(c net.Conn) (net.Conn, error) {
 }
 
 // Check checks the protocol.
-func (p *Proxy) Check(b []byte) (bool, int) {
+func (p *Proxy) Check(b []byte, _ []interface{}) (bool, int) {
 	if len(b) < len(p.match) {
 		return false, len(p.match)
 	}

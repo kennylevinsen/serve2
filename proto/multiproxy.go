@@ -36,7 +36,7 @@ func (p *MultiProxy) Handle(c net.Conn) (net.Conn, error) {
 }
 
 // Check checks the protocol.
-func (p *MultiProxy) Check(b []byte) (bool, int) {
+func (p *MultiProxy) Check(b []byte, _ []interface{}) (bool, int) {
 	required := 0
 
 	for _, v := range p.match {
