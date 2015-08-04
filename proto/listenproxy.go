@@ -15,9 +15,13 @@ type ListenChecker func(header []byte, hints []interface{}) (match bool, require
 type ListenProxy struct {
 	listener *utils.ChannelListener
 	Checker  ListenChecker
+	Desc     string
 }
 
-func (ListenProxy) String() string {
+func (lp *ListenProxy) String() string {
+	if lp.Desc != "" {
+		return "ListenProxy [" + lp.Desc + "]"
+	}
 	return "ListenProxy"
 }
 

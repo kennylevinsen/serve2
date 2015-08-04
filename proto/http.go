@@ -33,6 +33,7 @@ func checker(header []byte, _ []interface{}) (bool, int) {
 // Might be removed in the future.
 func NewHTTP(handler http.Handler) *ListenProxy {
 	lp := NewListenProxy(checker, 10)
+	lp.Desc = "HTTP"
 
 	httpServer := http.Server{Addr: ":http", Handler: handler}
 	go httpServer.Serve(lp.Listener())
