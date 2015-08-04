@@ -2,8 +2,8 @@
 Package serve2 provides a mechanism to detect and handle multiple protocols on
 a single net.Conn or net.Listener.
 
-ProtocolHandlers are defined as handlers that, given the amount of header bytes
-they require, can check if a header matches the protocol, as well as handle the
+Protocols are defined as handlers that, given the amount of header bytes they
+require, can check if a header matches the protocol, as well as handle the
 connection itself afterwards.
 
 The read bytes from the header are provided to the handler by ProxyConn, that
