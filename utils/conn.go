@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"io"
 	"net"
+	"sync"
 )
 
 // HintedConn describes a net.Conn which also provides hints about transports.
@@ -92,4 +94,31 @@ func NewProxyConn(c net.Conn, buffer []byte, storedErr error) *ProxyConn {
 		active:    len(buffer) > 0 || storedErr != nil,
 	}
 	return &pc
+}
+
+// DialAndProxy takes a net.Conn "a", and a destination "dest" to dial, and
+// forwards traffic between the connections.
+func DialAndProxy(a net.Conn, proto, dest string) error {
+	b, err := net.Dial(proto, dest)
+	if err != nil {
+		return err
+	}
+
+	var closer sync.Once
+	closerFunc := func() {
+		a.Close()
+		b.Close()
+	}
+
+	go func() {
+		io.Copy(a, b)
+		closer.Do(closerFunc)
+	}()
+
+	go func() {
+		io.Copy(b, a)
+		closer.Do(closerFunc)
+	}()
+
+	return nil
 }
