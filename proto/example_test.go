@@ -8,6 +8,7 @@ import (
 
 	"github.com/joushou/serve2"
 	"github.com/joushou/serve2/proto"
+	"github.com/joushou/serve2/utils"
 )
 
 func ExampleNewTLS() {
@@ -125,16 +126,35 @@ func ExampleNewListenProxy() {
 
 		if bytes.Compare(header[:3], []byte("GET")) == 0 {
 			return true, 0
-		} else {
-			return false, 0
 		}
+		return false, 0
 	}
 
 	lp := proto.NewListenProxy(checker, 10)
+	lp.Description = "HTTP"
 
 	go http.Serve(lp.Listener(), &HTTPHandler{})
 
 	server.AddHandlers(lp)
+	l, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
+	server.Serve(l)
+}
+
+func ExampleSimpleMatcher() {
+	server := serve2.New()
+
+	handler := func(c net.Conn) (net.Conn, error) {
+		return nil, utils.DialAndProxy(c, "tcp", "localhost:80")
+	}
+
+	sm := proto.NewSimpleMatcher(proto.HTTPMethods, handler)
+	sm.Description = "HTTP"
+
+	server.AddHandlers(sm)
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		panic(err)

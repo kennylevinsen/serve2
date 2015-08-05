@@ -14,7 +14,7 @@ func (dummyConn) isAwesome() bool {
 	return true
 }
 
-func TestNewListenProxy(t *testing.T) {
+func TestListenProxy(t *testing.T) {
 	checker := func([]byte, []interface{}) (bool, int) {
 		return true, 0
 	}

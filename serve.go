@@ -34,10 +34,6 @@ type Protocol interface {
 	// can return a net.Conn which will be thrown through the entire protocol
 	// management show again.
 	Handle(c net.Conn) (net.Conn, error)
-
-	// String returns a pretty representation of the protocol to be used for
-	// logging purposes.
-	String() string
 }
 
 // ProtocolHandler is a legacy alias for Protocol
@@ -220,7 +216,7 @@ func (s *Server) HandleConn(c net.Conn, hints []interface{}) error {
 
 	// No one knew what was going on on this connection
 	if s.Logger != nil {
-		s.Logger("Handling %v failed: [%v]", c.RemoteAddr(), header)
+		s.Logger("Handling %v failed: [%q]", c.RemoteAddr(), header)
 	}
 
 	c.Close()

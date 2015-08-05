@@ -4,27 +4,23 @@ import (
 	"testing"
 )
 
-func TestHTTP(t *testing.T) {
-	h := NewHTTP(nil)
+func TestTLS(t *testing.T) {
+	h := &TLS{}
 
 	tests := []struct {
 		payload  []byte
 		match    bool
 		required int
 	}{
-		{nil, false, 3},
-		{[]byte("G"), false, 3},
-		{[]byte("P"), false, 3},
-		{[]byte("H"), false, 4},
-		{[]byte("T"), false, 5},
-		{[]byte("D"), false, 6},
-		{[]byte("O"), false, 7},
-		{[]byte("C"), false, 7},
-		{[]byte("A"), false, 0},
-		{[]byte("CO"), false, 7},
-		{[]byte("GET"), true, 0},
-		{[]byte("CONNACT"), false, 0},
-		{[]byte("GET /index.html HTTP/1.1"), true, 0},
+		{nil, false, 6},
+		{[]byte{0x15}, false, 0},
+		{[]byte{0x16, 0x02}, false, 0},
+		{[]byte{0x16, 0x03}, false, 6},
+		{[]byte{0x15, 0x03, 0x01, 0x00, 0xc4, 0x01}, false, 0},
+		{[]byte{0x16, 0x02, 0x01, 0x00, 0xc4, 0x01}, false, 0},
+		{[]byte{0x16, 0x02, 0x01, 0x00, 0xc4, 0x01}, false, 0},
+		{[]byte{0x16, 0x03, 0x01, 0x00, 0xc4, 0x01}, true, 0},
+		{[]byte{0x16, 0x03, 0x01, 0x00, 0x8d, 0x01}, true, 0},
 	}
 
 	for _, test := range tests {

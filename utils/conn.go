@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"crypto/tls"
+	"io"
 	"net"
+	"sync"
 )
 
 // HintedConn describes a net.Conn which also provides hints about transports.
@@ -92,4 +95,48 @@ func NewProxyConn(c net.Conn, buffer []byte, storedErr error) *ProxyConn {
 		active:    len(buffer) > 0 || storedErr != nil,
 	}
 	return &pc
+}
+
+// DialAndProxy takes a net.Conn "a", and a destination "dest" to dial, and
+// forwards traffic between the connections.
+func DialAndProxy(a net.Conn, proto, dest string) error {
+	b, err := net.Dial(proto, dest)
+	if err != nil {
+		return err
+	}
+
+	proxy(a, b)
+	return nil
+}
+
+// DialAndProxyTLS takes a net.Conn "a", and a destination "dest" to dial with
+// TLS, and forwards traffic between the connections.
+func DialAndProxyTLS(a net.Conn, proto, dest string, config *tls.Config) error {
+	b, err := tls.Dial(proto, dest, config)
+	if err != nil {
+		return err
+	}
+
+	proxy(a, b)
+	return nil
+}
+
+// proxy takes a net.Conn "a" and a net.Conn "b", and forwards traffic between
+// the connections.
+func proxy(a net.Conn, b net.Conn) {
+	var closer sync.Once
+	closerFunc := func() {
+		a.Close()
+		b.Close()
+	}
+
+	go func() {
+		io.Copy(a, b)
+		closer.Do(closerFunc)
+	}()
+
+	go func() {
+		io.Copy(b, a)
+		closer.Do(closerFunc)
+	}()
 }

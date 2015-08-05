@@ -6,43 +6,40 @@ import (
 	"github.com/joushou/serve2/utils"
 )
 
-// ListenChecker is the provided Check function for ListenProxy, identical to
-// ProtocolHandler.Check
-type ListenChecker func(header []byte, hints []interface{}) (match bool, required int)
-
 // ListenProxy provides a net.Listener whose Accept will only return matched
 // protocols.
 type ListenProxy struct {
-	listener *utils.ChannelListener
-	Checker  ListenChecker
-	Desc     string
+	listener    *utils.ChannelListener
+	Checker     func([]byte, []interface{}) (bool, int)
+	Description string
 }
 
 func (lp *ListenProxy) String() string {
-	if lp.Desc != "" {
-		return "ListenProxy [" + lp.Desc + "]"
-	}
-	return "ListenProxy"
+	return lp.Description
 }
 
 // Listener returns the proxy net.Listener.
-func (l *ListenProxy) Listener() net.Listener {
-	return l.listener
+func (lp *ListenProxy) Listener() net.Listener {
+	return lp.listener
 }
 
 // Handle pushes the connection to the ListenProxy server.
-func (l *ListenProxy) Handle(c net.Conn) (net.Conn, error) {
-	l.listener.Push(c)
+func (lp *ListenProxy) Handle(c net.Conn) (net.Conn, error) {
+	lp.listener.Push(c)
 	return nil, nil
 }
 
 // Check just calls the ListenChecker.
-func (l *ListenProxy) Check(header []byte, hints []interface{}) (bool, int) {
-	return l.Checker(header, hints)
+func (lp *ListenProxy) Check(header []byte, hints []interface{}) (bool, int) {
+	return lp.Checker(header, hints)
 }
 
 // NewListenProxy returns a fully initialized ListenProxy.
-func NewListenProxy(checker ListenChecker, buffer int) *ListenProxy {
+func NewListenProxy(checker func([]byte, []interface{}) (bool, int), buffer int) *ListenProxy {
 	listener := utils.NewChannelListener(make(chan net.Conn, buffer), nil)
-	return &ListenProxy{listener: listener, Checker: checker}
+	return &ListenProxy{
+		listener:    listener,
+		Checker:     checker,
+		Description: "ListenProxy",
+	}
 }
