@@ -50,6 +50,13 @@ func (t *TLS) Handle(c net.Conn) (net.Conn, error) {
 // Check checks if the protocol is TLS
 func (t *TLS) Check(header []byte, _ []interface{}) (bool, int) {
 	if len(header) < 6 {
+		// We can try to check the handhake or the version
+		if len(header) >= 2 && header[1] != TLSMajor {
+			return false, 0
+		}
+		if len(header) >= 1 && header[0] != TLSHandshake {
+			return false, 0
+		}
 		return false, 6
 	}
 
