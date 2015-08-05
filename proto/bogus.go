@@ -31,7 +31,7 @@ var (
 func NewHTTP(handler http.Handler) *ListenProxy {
 	sm := &SimpleMatcher{Matches: HTTPMethods}
 	lp := NewListenProxy(sm.Check, 10)
-	lp.Desc = "HTTP"
+	lp.Description = "HTTP"
 
 	httpServer := http.Server{Addr: ":http", Handler: handler}
 	go httpServer.Serve(lp.Listener())
@@ -53,8 +53,8 @@ func NewEcho() *SimpleMatcher {
 		Matches: [][]byte{
 			[]byte("ECHO"),
 		},
-		Desc:    "Echo",
-		Handler: handler,
+		Description: "Echo",
+		Handler:     handler,
 	}
 }
 
@@ -81,8 +81,8 @@ func NewDiscard() *SimpleMatcher {
 		Matches: [][]byte{
 			[]byte("DISCARD"),
 		},
-		Desc:    "Discard",
-		Handler: handler,
+		Description: "Discard",
+		Handler:     handler,
 	}
 }
 
@@ -93,9 +93,9 @@ func NewMultiProxy(matches [][]byte, proto, dest string) *SimpleMatcher {
 	}
 
 	sm := &SimpleMatcher{
-		Matches: matches,
-		Desc:    fmt.Sprintf("Proxy [dest: %s]", dest),
-		Handler: handler,
+		Matches:     matches,
+		Description: fmt.Sprintf("Proxy [dest: %s]", dest),
+		Handler:     handler,
 	}
 
 	sm.Sort()

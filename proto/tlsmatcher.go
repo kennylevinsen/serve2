@@ -25,8 +25,8 @@ func (tcv TLSMatcherChecks) IsSet(other TLSMatcherChecks) bool {
 }
 
 // TLSMatcher is a TLS connection inspector, that will verify the
-// tls.ConnectionState fields described by Verifications. If no verifications
-// are enabled, TLSMatcher will simply match the presence of a TLS transport.
+// tls.ConnectionState fields described by Checks. If no verifications are
+// enabled, TLSMatcher will simply match the presence of a TLS transport.
 type TLSMatcher struct {
 	ServerName                 string
 	NegotiatedProtocol         string
@@ -34,12 +34,17 @@ type TLSMatcher struct {
 	PeerCertificates           []*x509.Certificate
 	CipherSuite                uint16
 	Version                    uint16
-	Verifications              TLSMatcherChecks
+	Checks                     TLSMatcherChecks
 	Handler                    func(net.Conn) (net.Conn, error)
+	Description                string
 }
 
 type connectionStater interface {
 	ConnectionState() tls.ConnectionState
+}
+
+func (tc *TLSMatcher) String() string {
+	return tc.Description
 }
 
 // Check inspects the last transport hint, checking if it is a TLS transport.
@@ -57,21 +62,21 @@ func (tc *TLSMatcher) Check(_ []byte, hints []interface{}) (bool, int) {
 
 	cs := c.ConnectionState()
 
-	if tc.Verifications.IsSet(TLSCheckServerName) && tc.ServerName != cs.ServerName {
+	if tc.Checks.IsSet(TLSCheckServerName) && tc.ServerName != cs.ServerName {
 		return false, 0
 	}
 
-	if tc.Verifications.IsSet(TLSCheckNegotiatedProtocol) &&
+	if tc.Checks.IsSet(TLSCheckNegotiatedProtocol) &&
 		tc.NegotiatedProtocol != cs.NegotiatedProtocol {
 		return false, 0
 	}
 
-	if tc.Verifications.IsSet(TLSCheckNegotiatedProtocolIsMutual) &&
+	if tc.Checks.IsSet(TLSCheckNegotiatedProtocolIsMutual) &&
 		tc.NegotiatedProtocolIsMutual != cs.NegotiatedProtocolIsMutual {
 		return false, 0
 	}
 
-	if tc.Verifications.IsSet(TLSCheckClientCertificate) {
+	if tc.Checks.IsSet(TLSCheckClientCertificate) {
 		// TODO: Is this how you do check the clients certificate? :/
 
 		for _, cert := range tc.PeerCertificates {
@@ -83,11 +88,11 @@ func (tc *TLSMatcher) Check(_ []byte, hints []interface{}) (bool, int) {
 	certOk:
 	}
 
-	if tc.Verifications.IsSet(TLSCheckCipherSuite) && tc.CipherSuite != cs.CipherSuite {
+	if tc.Checks.IsSet(TLSCheckCipherSuite) && tc.CipherSuite != cs.CipherSuite {
 		return false, 0
 	}
 
-	if tc.Verifications.IsSet(TLSCheckVersion) && tc.Version != cs.Version {
+	if tc.Checks.IsSet(TLSCheckVersion) && tc.Version != cs.Version {
 		return false, 0
 	}
 
@@ -101,5 +106,8 @@ func (tc *TLSMatcher) Handle(c net.Conn) (net.Conn, error) {
 
 // NewTLSMatcher returns a *TLSMatcher configured with the provided handler.
 func NewTLSMatcher(handler func(net.Conn) (net.Conn, error)) *TLSMatcher {
-	return &TLSMatcher{Handler: handler}
+	return &TLSMatcher{
+		Handler:     handler,
+		Description: "TLSMatcher",
+	}
 }

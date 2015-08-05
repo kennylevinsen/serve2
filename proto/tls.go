@@ -20,11 +20,12 @@ const (
 type TLS struct {
 	// config stores the TLS configuration, including supported protocols and
 	// certificates.
-	config *tls.Config
+	config      *tls.Config
+	Description string
 }
 
-func (TLS) String() string {
-	return "TLS"
+func (t *TLS) String() string {
+	return t.Description
 }
 
 // Setup loads the certificates and sets up supported protocols.
@@ -68,7 +69,7 @@ func (t *TLS) Check(header []byte, _ []interface{}) (bool, int) {
 
 // NewTLS returns an initialized TLS.
 func NewTLS(protos []string, cert, key string) (*TLS, error) {
-	h := TLS{}
+	h := TLS{Description: "TLS"}
 	err := h.Setup(protos, cert, key)
 	if err != nil {
 		return nil, err

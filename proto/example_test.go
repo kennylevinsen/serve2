@@ -131,7 +131,7 @@ func ExampleNewListenProxy() {
 	}
 
 	lp := proto.NewListenProxy(checker, 10)
-	lp.Desc = "HTTP"
+	lp.Description = "HTTP"
 
 	go http.Serve(lp.Listener(), &HTTPHandler{})
 
@@ -152,7 +152,7 @@ func ExampleSimpleMatcher() {
 	}
 
 	sm := proto.NewSimpleMatcher(proto.HTTPMethods, handler)
-	sm.Desc = "HTTP"
+	sm.Description = "HTTP"
 
 	server.AddHandlers(sm)
 	l, err := net.Listen("tcp", ":8080")

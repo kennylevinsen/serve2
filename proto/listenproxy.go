@@ -9,13 +9,13 @@ import (
 // ListenProxy provides a net.Listener whose Accept will only return matched
 // protocols.
 type ListenProxy struct {
-	listener *utils.ChannelListener
-	Checker  func([]byte, []interface{}) (bool, int)
-	Desc     string
+	listener    *utils.ChannelListener
+	Checker     func([]byte, []interface{}) (bool, int)
+	Description string
 }
 
 func (lp *ListenProxy) String() string {
-	return lp.Desc
+	return lp.Description
 }
 
 // Listener returns the proxy net.Listener.
@@ -38,8 +38,8 @@ func (lp *ListenProxy) Check(header []byte, hints []interface{}) (bool, int) {
 func NewListenProxy(checker func([]byte, []interface{}) (bool, int), buffer int) *ListenProxy {
 	listener := utils.NewChannelListener(make(chan net.Conn, buffer), nil)
 	return &ListenProxy{
-		listener: listener,
-		Checker:  checker,
-		Desc:     "ListenProxy",
+		listener:    listener,
+		Checker:     checker,
+		Description: "ListenProxy",
 	}
 }

@@ -19,7 +19,7 @@ func TestTLSMatcher(t *testing.T) {
 	tlsCheck.ServerName = "TestName"
 	tlsCheck.NegotiatedProtocol = "h2"
 	tlsCheck.Version = tls.VersionTLS12
-	tlsCheck.Verifications = TLSCheckServerName | TLSCheckNegotiatedProtocol | TLSCheckVersion
+	tlsCheck.Checks = TLSCheckServerName | TLSCheckNegotiatedProtocol | TLSCheckVersion
 
 	tests := []struct {
 		match bool
