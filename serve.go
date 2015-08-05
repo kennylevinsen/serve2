@@ -34,10 +34,6 @@ type Protocol interface {
 	// can return a net.Conn which will be thrown through the entire protocol
 	// management show again.
 	Handle(c net.Conn) (net.Conn, error)
-
-	// String returns a pretty representation of the protocol to be used for
-	// logging purposes.
-	String() string
 }
 
 // ProtocolHandler is a legacy alias for Protocol
