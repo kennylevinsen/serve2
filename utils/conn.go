@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/tls"
 	"io"
 	"net"
 	"sync"
@@ -104,6 +105,25 @@ func DialAndProxy(a net.Conn, proto, dest string) error {
 		return err
 	}
 
+	proxy(a, b)
+	return nil
+}
+
+// DialAndProxyTLS takes a net.Conn "a", and a destination "dest" to dial with
+// TLS, and forwards traffic between the connections.
+func DialAndProxyTLS(a net.Conn, proto, dest string, config *tls.Config) error {
+	b, err := tls.Dial(proto, dest, config)
+	if err != nil {
+		return err
+	}
+
+	proxy(a, b)
+	return nil
+}
+
+// proxy takes a net.Conn "a" and a net.Conn "b", and forwards traffic between
+// the connections.
+func proxy(a net.Conn, b net.Conn) {
 	var closer sync.Once
 	closerFunc := func() {
 		a.Close()
@@ -119,6 +139,4 @@ func DialAndProxy(a net.Conn, proto, dest string) error {
 		io.Copy(b, a)
 		closer.Do(closerFunc)
 	}()
-
-	return nil
 }
