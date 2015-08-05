@@ -216,7 +216,7 @@ func (s *Server) HandleConn(c net.Conn, hints []interface{}) error {
 
 	// No one knew what was going on on this connection
 	if s.Logger != nil {
-		s.Logger("Handling %v failed: [%v]", c.RemoteAddr(), header)
+		s.Logger("Handling %v failed: [%q]", c.RemoteAddr(), header)
 	}
 
 	c.Close()
