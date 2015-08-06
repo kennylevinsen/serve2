@@ -28,12 +28,12 @@ func (tcv TLSMatcherChecks) IsSet(other TLSMatcherChecks) bool {
 // tls.ConnectionState fields described by Checks. If no verifications are
 // enabled, TLSMatcher will simply match the presence of a TLS transport.
 type TLSMatcher struct {
-	ServerName                 string
-	NegotiatedProtocol         string
+	ServerNames                []string
+	NegotiatedProtocols        []string
 	NegotiatedProtocolIsMutual bool
 	PeerCertificates           []*x509.Certificate
-	CipherSuite                uint16
-	Version                    uint16
+	CipherSuites               []uint16
+	Versions                   []uint16
 	Checks                     TLSMatcherChecks
 	Handler                    func(net.Conn) (net.Conn, error)
 	Description                string
@@ -62,13 +62,24 @@ func (tc *TLSMatcher) Check(_ []byte, hints []interface{}) (bool, int) {
 
 	cs := c.ConnectionState()
 
-	if tc.Checks.IsSet(TLSCheckServerName) && tc.ServerName != cs.ServerName {
+	if tc.Checks.IsSet(TLSCheckServerName) {
+		for _, sn := range tc.ServerNames {
+			if sn == cs.ServerName {
+				goto serverNameOK
+			}
+		}
 		return false, 0
+	serverNameOK:
 	}
 
-	if tc.Checks.IsSet(TLSCheckNegotiatedProtocol) &&
-		tc.NegotiatedProtocol != cs.NegotiatedProtocol {
+	if tc.Checks.IsSet(TLSCheckNegotiatedProtocol) {
+		for _, np := range tc.NegotiatedProtocols {
+			if np == cs.NegotiatedProtocol {
+				goto protocolOK
+			}
+		}
 		return false, 0
+	protocolOK:
 	}
 
 	if tc.Checks.IsSet(TLSCheckNegotiatedProtocolIsMutual) &&
@@ -88,12 +99,24 @@ func (tc *TLSMatcher) Check(_ []byte, hints []interface{}) (bool, int) {
 	certOk:
 	}
 
-	if tc.Checks.IsSet(TLSCheckCipherSuite) && tc.CipherSuite != cs.CipherSuite {
+	if tc.Checks.IsSet(TLSCheckCipherSuite) {
+		for _, cipher := range tc.CipherSuites {
+			if cipher == cs.CipherSuite {
+				goto cipherOK
+			}
+		}
 		return false, 0
+	cipherOK:
 	}
 
-	if tc.Checks.IsSet(TLSCheckVersion) && tc.Version != cs.Version {
+	if tc.Checks.IsSet(TLSCheckVersion) {
+		for _, version := range tc.Versions {
+			if version == cs.Version {
+				goto versionOK
+			}
+		}
 		return false, 0
+	versionOK:
 	}
 
 	return true, 0

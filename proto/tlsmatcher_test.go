@@ -16,15 +16,31 @@ func (c ConnectionStater) ConnectionState() tls.ConnectionState {
 func TestTLSMatcher(t *testing.T) {
 	tlsCheck := &TLSMatcher{}
 
-	tlsCheck.ServerName = "TestName"
-	tlsCheck.NegotiatedProtocol = "h2"
-	tlsCheck.Version = tls.VersionTLS12
+	tlsCheck.ServerNames = []string{"TestName", "Abcd"}
+	tlsCheck.NegotiatedProtocols = []string{"h2", "h2-14"}
+	tlsCheck.Versions = []uint16{tls.VersionTLS12}
 	tlsCheck.Checks = TLSCheckServerName | TLSCheckNegotiatedProtocol | TLSCheckVersion
 
 	tests := []struct {
 		match bool
 		cs    tls.ConnectionState
 	}{
+		{
+			true,
+			tls.ConnectionState{
+				ServerName:         "Abcd",
+				NegotiatedProtocol: "h2-14",
+				Version:            tls.VersionTLS12,
+			},
+		},
+		{
+			true,
+			tls.ConnectionState{
+				ServerName:         "TestName",
+				NegotiatedProtocol: "h2-14",
+				Version:            tls.VersionTLS12,
+			},
+		},
 		{
 			true,
 			tls.ConnectionState{
