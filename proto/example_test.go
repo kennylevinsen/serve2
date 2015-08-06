@@ -2,6 +2,7 @@ package proto_test
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -155,6 +156,36 @@ func ExampleSimpleMatcher() {
 	sm.Description = "HTTP"
 
 	server.AddHandlers(sm)
+	l, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
+	server.Serve(l)
+}
+
+func ExampleTLSMatcher() {
+	server := serve2.New()
+
+	handler := func(c net.Conn) (net.Conn, error) {
+		return nil, utils.DialAndProxyTLS(c, "tcp", "http2.golang.org:443", &tls.Config{
+			NextProtos: []string{"h2", "h2-14"},
+			ServerName: "http2.golang.org",
+		})
+	}
+
+	tls, err := proto.NewTLS([]string{"h2", "h2-14"}, "cert.pem", "key.pem")
+	if err != nil {
+		panic(err)
+	}
+	server.AddHandlers(tls)
+
+	tm := proto.NewTLSMatcher(handler)
+	tm.NegotiatedProtocols = []string{"h2", "h2-14"}
+	tm.Checks = proto.TLSCheckNegotiatedProtocol
+	tm.Description = "HTTP2"
+
+	server.AddHandlers(tm)
 	l, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		panic(err)
