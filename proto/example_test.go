@@ -145,7 +145,7 @@ func ExampleNewListenProxy() {
 	server.Serve(l)
 }
 
-func ExampleSimpleMatcher() {
+func ExampleNewSimpleMatcher() {
 	server := serve2.New()
 
 	handler := func(c net.Conn) (net.Conn, error) {
@@ -164,7 +164,7 @@ func ExampleSimpleMatcher() {
 	server.Serve(l)
 }
 
-func ExampleTLSMatcher() {
+func ExampleNewTLSMatcher() {
 	server := serve2.New()
 
 	handler := func(c net.Conn) (net.Conn, error) {
