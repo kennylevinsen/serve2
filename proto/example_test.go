@@ -193,3 +193,24 @@ func ExampleNewTLSMatcher() {
 
 	server.Serve(l)
 }
+
+func ExampleNewChain() {
+	server := serve2.New()
+
+	handler := func(c net.Conn) (net.Conn, error) {
+		return nil, utils.DialAndProxy(c, "tcp", "localhost:80")
+	}
+
+	sm := proto.NewSimpleMatcher(proto.HTTPMethods, handler)
+	tm := &proto.TLSMatcher{}
+	cm := proto.NewChain(sm.Handle, tm.Check, sm.Check)
+	cm.Description = "HTTPS"
+
+	server.AddHandlers(cm)
+	l, err := net.Listen("tcp", ":8080")
+	if err != nil {
+		panic(err)
+	}
+
+	server.Serve(l)
+}
