@@ -224,12 +224,12 @@ func (s *Server) HandleConn(c net.Conn, hints []interface{}) error {
 }
 
 // Serve accepts connections on a listener, handling them as appropriate.
-func (s *Server) Serve(l net.Listener) {
+func (s *Server) Serve(l net.Listener) error {
 	s.prepareHandlers()
 	for {
 		conn, err := l.Accept()
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		go func() {
