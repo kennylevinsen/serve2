@@ -11,6 +11,10 @@ type Chain struct {
 	Description string
 }
 
+func (cm *Chain) String() string {
+	return cm.Description
+}
+
 // Handle calls the provided Handler.
 func (cm *Chain) Handle(c net.Conn) (net.Conn, error) {
 	return cm.Handler(c)
