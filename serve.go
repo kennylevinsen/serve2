@@ -53,13 +53,13 @@ type Server struct {
 	// BytesToCheck is the max amount of bytes to check
 	BytesToCheck int
 
-	protocols   []Protocol
-	minimumRead int
+	// Protocols is the list of protocols
+	Protocols []Protocol
 }
 
 // AddHandler registers a Protocol
 func (s *Server) AddHandler(p Protocol) {
-	s.protocols = append(s.protocols, p)
+	s.Protocols = append(s.Protocols, p)
 }
 
 // AddHandlers registers a set of Protocols
@@ -69,44 +69,8 @@ func (s *Server) AddHandlers(p ...Protocol) {
 	}
 }
 
-// prepareHandlers sorts the protocols after how many bytes they require to
-// detect their protocol (lowest first), and stores the highest number of bytes
-// required.
-func (s *Server) prepareHandlers() {
-	var handlers []Protocol
-
-	for range s.protocols {
-		smallest := -1
-		for i, v := range s.protocols {
-			var contestant, current int
-			_, contestant = v.Check(nil, nil)
-			if smallest == -1 {
-				smallest = i
-			} else {
-				_, current = s.protocols[smallest].Check(nil, nil)
-				if contestant < current {
-					smallest = i
-				}
-			}
-
-		}
-		handlers = append(handlers, s.protocols[smallest])
-		s.protocols = append(s.protocols[:smallest], s.protocols[smallest+1:]...)
-	}
-
-	_, s.minimumRead = handlers[0].Check(nil, nil)
-
-	s.protocols = handlers
-
-	if s.Logger != nil {
-		s.Logger("Sorted %d protocols:", len(s.protocols))
-
-		for _, protocol := range s.protocols {
-			s.Logger("\t%v", protocol)
-		}
-	}
-}
-
+// handle wraps the net.Conn in a ProxyConn, and if the protocol returns a
+// transport, runs it through HandleConn again as appropriate.
 func (s *Server) handle(h Protocol, c net.Conn, hints []interface{}, header []byte, readErr error) {
 	proxy := utils.NewProxyConn(c, header, readErr)
 	proxy.SetHints(hints)
@@ -142,14 +106,14 @@ func (s *Server) HandleConn(c net.Conn, hints []interface{}) error {
 		err      error
 		n        int
 		header   = make([]byte, 0, s.BytesToCheck)
-		handlers = make([]Protocol, len(s.protocols))
+		handlers = make([]Protocol, len(s.Protocols))
 	)
 
 	if hints == nil {
 		hints = make([]interface{}, 0)
 	}
 
-	copy(handlers, s.protocols)
+	copy(handlers, s.Protocols)
 
 	// This loop runs until we are out of candidate handlers, or until a handler
 	// is selected.
@@ -229,7 +193,14 @@ func (s *Server) HandleConn(c net.Conn, hints []interface{}) error {
 
 // Serve accepts connections on a listener, handling them as appropriate.
 func (s *Server) Serve(l net.Listener) error {
-	s.prepareHandlers()
+	if s.Logger != nil {
+		s.Logger("Serving %d protocols:", len(s.Protocols))
+
+		for _, protocol := range s.Protocols {
+			s.Logger("\t%v", protocol)
+		}
+	}
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
