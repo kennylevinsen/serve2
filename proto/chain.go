@@ -11,19 +11,19 @@ type Chain struct {
 	Description string
 }
 
-func (cm *Chain) String() string {
-	return cm.Description
+func (c *Chain) String() string {
+	return c.Description
 }
 
 // Handle calls the provided Handler.
-func (cm *Chain) Handle(c net.Conn) (net.Conn, error) {
-	return cm.Handler(c)
+func (c *Chain) Handle(conn net.Conn) (net.Conn, error) {
+	return c.Handler(conn)
 }
 
 // Check alls all the provided checkers in order, returning the output of the
 // first failing check. If all checkers pass, Check returns (true, 0).
-func (cm *Chain) Check(header []byte, hints []interface{}) (bool, int) {
-	for _, check := range cm.Checkers {
+func (c *Chain) Check(header []byte, hints []interface{}) (bool, int) {
+	for _, check := range c.Checkers {
 		ok, n := check(header, hints)
 		if !ok {
 			return ok, n
