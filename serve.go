@@ -115,14 +115,6 @@ func (s *Server) HandleConn(c net.Conn, hints []interface{}) error {
 
 	copy(handlers, s.Protocols)
 
-	if s.Logger != nil {
-		s.Logger("Serving %d protocols:", len(s.Protocols))
-
-		for _, protocol := range s.Protocols {
-			s.Logger("\t%v", protocol)
-		}
-	}
-
 	// This loop runs until we are out of candidate handlers, or until a handler
 	// is selected.
 	for len(handlers) > 0 {
@@ -201,6 +193,14 @@ func (s *Server) HandleConn(c net.Conn, hints []interface{}) error {
 
 // Serve accepts connections on a listener, handling them as appropriate.
 func (s *Server) Serve(l net.Listener) error {
+	if s.Logger != nil {
+		s.Logger("Serving %d protocols:", len(s.Protocols))
+
+		for _, protocol := range s.Protocols {
+			s.Logger("\t%v", protocol)
+		}
+	}
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
