@@ -113,7 +113,11 @@ func (s *Server) handle(h Protocol, c net.Conn, hints []interface{}, header []by
 
 	transport, err := h.Handle(proxy)
 	if err != nil {
-		s.Logger("Handling %v as %v failed: %v", c.RemoteAddr(), h, err)
+		if s.Logger != nil {
+			s.Logger("Handling %v as %v failed: %v", c.RemoteAddr(), h, err)
+		}
+
+		return
 	}
 
 	if transport != nil {
