@@ -1,4 +1,4 @@
-# serve2 [![GoDoc](https://godoc.org/github.com/joushou/serve2?status.svg)](http://godoc.org/github.com/joushou/serve2) [![Build Status](https://travis-ci.org/joushou/serve2.svg?branch=master)](https://travis-ci.org/joushou/serve2)
+# serve2 [![GoDoc](https://godoc.org/github.com/joushou/serve2?status.svg)](http://godoc.org/github.com/joushou/serve2) [![Build Status](https://travis-ci.org/joushou/serve2.svg?branch=master)](https://travis-ci.org/joushou/serve2) [![Go Report Card](https://goreportcard.com/badge/joushou/serve2)](https://goreportcard.com/report/joushou/serve2)
 
 A protocol detecting server library. For examples. look at the docs for the `github.com/joushou/serve2/proto` package.
 
