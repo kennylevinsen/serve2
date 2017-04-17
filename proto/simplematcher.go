@@ -2,6 +2,7 @@ package proto
 
 import (
 	"bytes"
+	"crypto/tls"
 	"net"
 	"sort"
 )
@@ -17,6 +18,7 @@ func (ms matchByLength) Less(i, j int) bool { return len(ms[i]) < len(ms[j]) }
 type SimpleMatcher struct {
 	Matches     [][]byte
 	Handler     func(net.Conn) (net.Conn, error)
+	RequiresTLS bool
 	Description string
 }
 
@@ -31,7 +33,22 @@ func (s *SimpleMatcher) Handle(c net.Conn) (net.Conn, error) {
 }
 
 // Check looks through the provided matches.
-func (s *SimpleMatcher) Check(header []byte, _ []interface{}) (bool, int) {
+func (s *SimpleMatcher) Check(header []byte, hints []interface{}) (bool, int) {
+	if s.RequiresTLS {
+		if len(hints) == 0 {
+			return false, 0
+		}
+
+		type connectionStater interface {
+			ConnectionState() tls.ConnectionState
+		}
+
+		h := hints[len(hints)-1]
+		if _, ok := h.(connectionStater); !ok {
+			return false, 0
+		}
+	}
+
 	for _, candidate := range s.Matches {
 		if len(candidate) > len(header) {
 			if bytes.Compare(candidate[:len(header)], header) == 0 {
