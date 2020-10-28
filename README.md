@@ -1,6 +1,6 @@
-# serve2 [![GoDoc](https://godoc.org/github.com/joushou/serve2?status.svg)](http://godoc.org/github.com/joushou/serve2) [![Build Status](https://travis-ci.org/joushou/serve2.svg?branch=master)](https://travis-ci.org/joushou/serve2) [![Go Report Card](https://goreportcard.com/badge/joushou/serve2)](https://goreportcard.com/report/joushou/serve2)
+# serve2 [![GoDoc](https://godoc.org/github.com/kennylevinsen/serve2?status.svg)](http://godoc.org/github.com/kennylevinsen/serve2) [![Build Status](https://travis-ci.org/kennylevinsen/serve2.svg?branch=master)](https://travis-ci.org/kennylevinsen/serve2) [![Go Report Card](https://goreportcard.com/badge/kennylevinsen/serve2)](https://goreportcard.com/report/kennylevinsen/serve2)
 
-A protocol detecting server library. For examples. look at the docs for the `github.com/joushou/serve2/proto` package.
+A protocol detecting server library. For examples. look at the docs for the `github.com/kennylevinsen/serve2/proto` package.
 
 serve2 accepts a connection, and runs it through the active Protocols, reading the smallest amount of data necessary to identify the protocol. Protocols do not need to be certain about how much data they need up front - they can ask for more as needed. A default Protocol can be used when the server fails to identify the protocol, or one can rely on the default behaviour that closes the socket.
 
@@ -13,12 +13,12 @@ Ensuring that the read bytes are fed back in is done by ProxyConn, a net.Conn-im
 # Installation and documentation
 To get:
 
-      go get github.com/joushou/serve2
+      go get github.com/kennylevinsen/serve2
 
 More info and examples at:
-* https://godoc.org/github.com/joushou/serve2 (The core itself)
-* https://godoc.org/github.com/joushou/serve2/proto (The bundled Protocols and example uses)
-* https://godoc.org/github.com/joushou/serve2/utils (Utilities like ProxyConn and ChannelListener)
+* https://godoc.org/github.com/kennylevinsen/serve2 (The core itself)
+* https://godoc.org/github.com/kennylevinsen/serve2/proto (The bundled Protocols and example uses)
+* https://godoc.org/github.com/kennylevinsen/serve2/utils (Utilities like ProxyConn and ChannelListener)
 
 # Why?
 Well, I always kind of wanted to make something that could understand *everything*. I get those kinds of ideas occasionally. At one point I remembered that idea, and hving gotten caught by the Go fever, I thought I'd try it out in Go, which proved to be very suitable for the idea.

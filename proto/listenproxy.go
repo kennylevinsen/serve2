@@ -3,7 +3,7 @@ package proto
 import (
 	"net"
 
-	"github.com/joushou/serve2/utils"
+	"github.com/kennylevinsen/serve2/utils"
 )
 
 // ListenProxy provides a net.Listener whose Accept will only return matched

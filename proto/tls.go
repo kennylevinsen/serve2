@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 
-	"github.com/joushou/serve2/utils"
+	"github.com/kennylevinsen/serve2/utils"
 )
 
 // TLS field constants
